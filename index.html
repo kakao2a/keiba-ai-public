@@ -1,1830 +1,328 @@
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>競馬AI 今日の予想</title>
-  <style>
-    :root {
-      --bg: #f4f6f8;
-      --panel: #fff;
-      --text: #172033;
-      --muted: #667085;
-      --line: #d8dee8;
-      --blue: #2563eb;
-      --green: #0f766e;
-      --dark: #111827;
-      --amber: #b45309;
-      --gold-bg: #fff7e6;
-      --gold-line: #fedf89;
-      --red: #b42318;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font-family: "Yu Gothic", "Meiryo", system-ui, sans-serif; }
-    header { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.97); border-bottom: 1px solid var(--line); padding: 12px 14px; }
-    .topbar { max-width: 1200px; margin: 0 auto 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    h1 { font-size: 19px; margin: 0; }
-    .badge { border: 1px solid #abefc6; background: #ecfdf3; color: #027a48; border-radius: 999px; padding: 6px 10px; font-weight: 800; white-space: nowrap; }
-    .stats { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-    .stat { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 8px 10px; }
-    .stat span { display: block; color: var(--muted); font-size: 11px; }
-    .stat b { display: block; margin-top: 3px; font-size: 14px; word-break: break-word; }
-    main { max-width: 1200px; margin: 0 auto; padding: 12px; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 12px; }
-    .control, .card, .empty, .top-panel, .mini-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
-    .control { padding: 14px; align-self: start; position: sticky; top: 158px; }
-    .card { padding: 14px; margin-bottom: 12px; }
-    .card.strong { border-left: 5px solid var(--amber); }
-    .card-head { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
-    h2 { font-size: 16px; margin: 0 0 8px; }
-    h3 { font-size: 13px; color: var(--muted); margin: 0 0 7px; }
-    .conclusion { border: 1px solid #fbbf24; background: #fffbeb; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-weight: 800; }
-    .conclusion .big { font-size: 22px; color: #92400e; margin-bottom: 4px; }
-    .conclusion p { margin: 6px 0 0; color: var(--muted); font-weight: 700; }
-    .chips, .filters, .idea-row, .links { display: flex; flex-wrap: wrap; gap: 8px; }
-    .grade, .odds, .rough, .label { display: inline-block; border-radius: 999px; padding: 4px 9px; font-weight: 900; font-size: 12px; }
-    .grade { background: var(--gold-bg); border: 1px solid var(--gold-line); color: var(--amber); }
-    .odds { background: #eff8ff; border: 1px solid #b2ddff; color: #175cd3; }
-    .rough { background: #fef3f2; border: 1px solid #fecdca; color: var(--red); }
-    .label { background: #f2f4f7; border: 1px solid #eaecf0; color: #344054; }
-    button, .link { width: 100%; display: block; border: 0; border-radius: 6px; padding: 12px; color: white; background: var(--blue); font-size: 15px; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; margin-bottom: 10px; }
-    .secondary { background: var(--green); }
-    .dark { background: var(--dark); }
-    .small { background: #475467; }
-    .filter { display: inline-block; text-decoration: none; color: #344054; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 8px 10px; font-size: 13px; font-weight: 800; }
-    .filter.active { background: var(--dark); color: #fff; border-color: var(--dark); }
-    .status { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; color: var(--muted); font-size: 12px; line-height: 1.7; }
-    .message { background: #eff8ff; border: 1px solid #b2ddff; border-radius: 6px; padding: 10px; margin-bottom: 12px; white-space: pre-wrap; font-size: 13px; }
-    .error, .warn { background: #fef3f2; border: 1px solid #fecdca; color: var(--red); border-radius: 6px; padding: 10px; margin: 10px 0; white-space: pre-wrap; font-size: 13px; font-weight: 800; }
-    .muted { color: var(--muted); font-size: 13px; line-height: 1.55; }
-    .buy-box, .mark-box { background: #f9fafb; border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 12px 0; }
-    .mark-box li { font-size: 17px; font-weight: 800; }
-    .ticket { display: inline-block; background: var(--gold-bg); border: 1px solid var(--gold-line); border-radius: 6px; padding: 8px 10px; margin: 0 6px 6px 0; font-size: 16px; font-weight: 900; }
-    .money { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-weight: 800; margin: 10px 0; }
-    .copy-text { width: 100%; min-height: 76px; border: 1px solid var(--line); border-radius: 6px; padding: 8px; font-size: 14px; resize: vertical; }
-    .copy-btn { background: #7c3aed; margin-top: 6px; }
-    .links a { color: #175cd3; font-weight: 800; text-decoration: none; border: 1px solid #b2ddff; background: #eff8ff; border-radius: 999px; padding: 6px 9px; font-size: 12px; }
-    .none { color: var(--muted); font-size: 13px; display: inline-block; margin: 4px 0; }
-    details { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
-    summary { font-weight: 800; cursor: pointer; font-size: 13px; }
-    ol, ul { padding-left: 20px; }
-    li { margin: 8px 0; line-height: 1.5; }
-    .top-panel, .mini-panel { padding: 14px; margin-bottom: 12px; }
-    .top-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .top5 span { display: inline-block; color: var(--amber); font-weight: 900; margin-left: 6px; }
-    .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .idea-row span { display: inline-block; background: #111827; color: #fff; border-radius: 999px; padding: 7px 10px; font-weight: 800; font-size: 13px; }
-    .empty { padding: 22px; text-align: center; }
-    pre { max-height: 300px; overflow: auto; white-space: pre-wrap; word-break: break-word; background: #111827; color: #d1d5db; border-radius: 8px; padding: 10px; font-size: 12px; }
-    .help { margin-top: 12px; color: var(--muted); font-size: 12px; line-height: 1.7; }
-    @media (max-width: 900px) {
-      header { position: static; }
-      .stats { grid-template-columns: 1fr 1fr; }
-      main { grid-template-columns: 1fr; padding: 10px; }
-      .control { position: static; }
-      .top-sections, .insight-grid { grid-template-columns: 1fr; }
-      .conclusion .big { font-size: 20px; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="topbar">
-      <h1>競馬AI 今日の予想</h1>
-      <div class="badge">36 / 36レース</div>
-    </div>
-    <div class="stats"><div class='stat'><span>対象日</span><b>2026/05/09</b></div><div class='stat'><span>開催場</span><b>京都 / 新潟 / 東京</b></div><div class='stat'><span>出走馬数</span><b>495頭</b></div><div class='stat'><span>表示中</span><b>36レース</b></div><div class='stat'><span>ガチ買い目</span><b>0R</b></div><div class='stat'><span>候補込み対象</span><b>22R</b></div><div class='stat'><span>全レース対象</span><b>36R</b></div><div class='stat'><span>race_id</span><b>netkeiba_race_ids.csv: 36R中36R作成</b></div><div class='stat'><span>note更新</span><b>2026/05/08 20:39:14</b></div><div class='stat'><span>live_odds.csv</span><b>あり / 28.9 KB</b></div><div class='stat'><span>オッズ対象日</span><b>対象日一致</b></div><div class='stat'><span>オッズ最終取得</span><b>2026/05/08 20:59:22</b></div><div class='stat'><span>鮮度</span><b>やや古い / 48分前</b></div></div>
-  </header>
-  <main>
-    <section class="control">
-      <div class="message">
-        これはスマホで見るための公開用ページです。更新やオッズ取得はPC側の管理画面で行ってください。
-      </div>
-    
-      <div class='message'>公開用ページです。作成時刻: 2026/05/08 21:47:30 / このページは見るだけ用です。</div>
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      <div class="status">
-        <div>見るフォルダ: C:\Users\rihit\OneDrive\デスクトップ\keiba_ai</div>
-        <div>race_predict.csv: あり / 104.7 KB</div>
-        <div>netkeiba_race_ids.csv: あり / 1.7 KB</div>
-        <div>live_odds.csv: あり / 28.9 KB</div>
-        <div>ai_model_note.txt: あり / 106.5 KB</div>
-        <div>today_buy_note.txt: なし</div>
-      </div>
-      <pre>まだ実行していません。</pre>
-      <div class="help">
-        毎回の使い方:<br>
-        1. TARGETで出馬表CSVを出す<br>
-        2. C:\Users\rihit\OneDrive\デスクトップ\keiba_ai\race_predict.csv に上書き<br>
-        3. WEBで main.pyを実行<br>
-        4. 表示だけ更新<br>
-        5. 必要なら候補込みでnetkeibaオッズ取得<br>
-        6. note用テキスト作成
-      </div>
-    </section>
-    <section>
-      <section class="top-panel"><h2>今日のおすすめ</h2>
-    <div class="top-sections">
-      <div><h3>ガチ買い目</h3><p class='muted'>ガチ買い目はありません。</p></div>
-      <div><h3>候補止まりTOP5</h3><ol class='top5'><li><b>1位 京都10R</b> 1位 ◎2 メディテラニアン AI17.46 / 勝率16.5% / 複勝18.6% <span>候補止まり</span></li><li><b>2位 新潟5R</b> 1位 ◎12 メイショウピュルテ AI16.36 / 勝率6.8% / 複勝28.1% <span>候補止まり</span></li><li><b>3位 京都12R</b> 1位 ◎7 ニホンピロデヴィン AI16.13 / 勝率13.8% / 複勝19.0% <span>候補止まり</span></li><li><b>4位 京都5R</b> 1位 ◎7 コルテオソレイユ AI15.93 / 勝率13.4% / 複勝19.0% <span>候補止まり</span></li><li><b>5位 新潟4R</b> 1位 ◎10 バルサムノート AI15.78 / 勝率12.5% / 複勝19.8% <span>候補止まり</span></li></ol></div>
-      <div><h3>穴候補</h3><ol class='top5'><li><b>1位 京都5R</b> 1位 ◎7 コルテオソレイユ AI15.93 / 勝率13.4% / 複勝19.0% <span>候補止まり</span></li><li><b>2位 新潟10R</b> 1位 ◎2 ドーギッド AI15.20 / 勝率10.5% / 複勝21.0% <span>候補止まり</span></li><li><b>3位 東京4R</b> 1位 ◎6 ガードオブオナー AI15.12 / 勝率10.2% / 複勝21.1% <span>候補止まり</span></li><li><b>4位 新潟8R</b> 1位 ◎15 サラサラヘアー AI14.96 / 勝率9.9% / 複勝21.2% <span>穴候補</span></li><li><b>5位 京都9R</b> 1位 ◎3 スナークピカソ AI14.94 / 勝率11.5% / 複勝19.1% <span>穴候補</span></li></ol></div>
-      <div><h3>危険人気馬</h3><ol class='top5'><li><b>2026/05/09 新潟9R</b> 8番 マナボニート 人気1 / AI順位14位</li><li><b>2026/05/09 新潟1R</b> 11番 メイショウブレゲ 人気1 / AI順位13位</li><li><b>2026/05/09 京都8R</b> 12番 インピッシュ 人気1 / AI順位12位</li><li><b>2026/05/09 京都4R</b> 9番 ジャジャミン 人気1 / AI順位10位</li><li><b>2026/05/09 新潟8R</b> 13番 リアンクトワ 人気1 / AI順位10位</li></ol></div>
-    </div>
-    </section>
-      
-    <section class="insight-grid">
-      <div class="mini-panel"><h2>穴馬リスト</h2><ul><li>2026/05/09 京都1R 5番 キープシャイニング / 10.6倍 / 6番人気 / AI順位1位 / 妙味0</li><li>2026/05/09 京都3R 15番 アンジュラフィーユ / 34.7倍 / 7番人気 / AI順位1位 / 妙味0</li><li>2026/05/09 京都5R 7番 コルテオソレイユ / 10.7倍 / 6番人気 / AI順位1位 / 妙味0</li><li>2026/05/09 京都6R 6番 ハードシングス / 54.8倍 / 14番人気 / AI順位1位 / 妙味0</li><li>2026/05/09 京都7R 8番 テンエースワン / 30.8倍 / 6番人気 / AI順位1位 / 妙味0</li><li>2026/05/09 京都9R 3番 スナークピカソ / 16.2倍 / 7番人気 / AI順位1位 / 妙味0</li><li>2026/05/09 新潟7R 15番 ナンヨークリスタル / 30.0倍 / 8番人気 / AI順位1位 / 妙味0</li><li>2026/05/09 新潟8R 15番 サラサラヘアー / 41.9倍 / 7番人気 / AI順位1位 / 妙味0</li><li>2026/05/09 新潟10R 2番 ドーギッド / 54.4倍 / 8番人気 / AI順位1位 / 妙味0</li><li>2026/05/09 新潟11R 10番 トーアアイギス / 90.0倍 / 16番人気 / AI順位1位 / 妙味0</li></ul></div>
-      <div class="mini-panel"><h2>危険人気馬リスト</h2><ul><li>2026/05/09 新潟9R 8番 マナボニート / 3.2倍 / 1番人気 / AI順位14位 / 妙味0</li><li>2026/05/09 新潟1R 11番 メイショウブレゲ / 2.8倍 / 1番人気 / AI順位13位 / 妙味0</li><li>2026/05/09 京都8R 12番 インピッシュ / 2.8倍 / 1番人気 / AI順位12位 / 妙味0</li><li>2026/05/09 京都4R 9番 ジャジャミン / 2.1倍 / 1番人気 / AI順位10位 / 妙味0</li><li>2026/05/09 新潟8R 13番 リアンクトワ / 1.1倍 / 1番人気 / AI順位10位 / 妙味0</li><li>2026/05/09 東京3R 16番 サトノワーグナー / 1.8倍 / 1番人気 / AI順位10位 / 妙味0</li><li>2026/05/09 京都6R 7番 マメタンク / 3.2倍 / 1番人気 / AI順位8位 / 妙味0</li><li>2026/05/09 新潟4R 11番 ルドヴィクス / 4.1倍 / 1番人気 / AI順位8位 / 妙味0</li><li>2026/05/09 京都5R 4番 レッドリガーレ / 2.5倍 / 1番人気 / AI順位7位 / 妙味0</li><li>2026/05/09 新潟7R 12番 ピコテンダー / 3.2倍 / 1番人気 / AI順位7位 / 妙味0</li></ul></div>
-    </section>
-    
-      
-    <section class="mini-panel">
-      <h2>YouTube/TikTokネタ</h2>
-      <h3>タイトル案</h3>
-      <div class="idea-row"><span>AIが拾った穴馬、2026/05/09 京都1Rの5番が普通に怖い</span><span>人気ないけどこの馬だけ評価おかしい</span><span>この穴馬ヤバい</span></div>
-      <h3>サムネ文言</h3>
-      <div class="idea-row"><span>この穴馬ヤバい</span><span>AI評価上位</span><span>単勝10.6倍</span></div>
-    </section>
-    
-      <div class='raceid-report'><b>netkeiba_race_ids.csv: 36R中36R作成</b></div><div class="filters"><a class='filter active' href='/?filter=all'>全部</a>
-<a class='filter' href='/?filter=gachi'>ガチ買い目</a>
-<a class='filter' href='/?filter=candidate'>候補止まり</a>
-<a class='filter' href='/?filter=longshot'>穴候補</a>
-<a class='filter' href='/?filter=wide'>ワイド向き</a>
-<a class='filter' href='/?filter=trio'>三連複向き</a>
-<a class='filter' href='/?filter=win'>単勝向き</a>
-<a class='filter' href='/?filter=place'>複勝向き</a>
-<a class='filter' href='/?filter=not_fav'>1番人気以外</a>
-<a class='filter' href='/?filter=skip'>見送り</a></div>
-      
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 候補止まり</div>
-            <div>京都10R 鴨川特別･2勝</div>
-            <div>推奨: 見送り</div>
-            <p>AI評価は上位ですが、条件が少し足りません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都10R 鴨川特別･2勝 芝2000m</h2>
-              <div class="chips"><span class="grade">C</span><span class="odds">単勝9.3倍 / 4番人気</span><span class="rough">やや荒れ</span><span class='label'>候補止まり</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎2 メディテラニアン AI17.46 / 勝率16.5% / 複勝18.6%</li><li>2位 ○1 クラヴァンス AI15.61 / 勝率14.3% / 複勝17.3%</li><li>3位 ▲5 アオイタケル AI14.84 / 勝率12.7% / 複勝17.4%</li><li>4位 △3 ヴィスマール AI14.79 / 勝率11.7% / 複勝18.6%</li><li>5位 ☆7 ミカエルパシャ AI14.74 / 勝率13.4% / 複勝16.3%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>2</span></div>
-            <div><b>複勝:</b> <span class='ticket'>2</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>1-2</span><span class='ticket'>2-5</span></div>
-            <div><b>三連複:</b> <span class='ticket'>1-2-5</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 2
-複勝 2
-ワイド 1-2
-ワイド 2-5
-三連複 1-2-5</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030510&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030510' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率18.6%</li><li>勝率16.5%</li><li>単勝9.3倍</li><li>荒れ度: やや荒れ</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎2 メディテラニアン: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>○1 クラヴァンス: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲5 アオイタケル: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>△3 ヴィスマール: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアは標準以上 / 複勝率評価が弱い / 勝率評価が高い / 1位と2位に少し差がある / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>2 メディテラニアン: AI順位1位 / 人気4番人気 / ズレ+3 / 妙味スコア74 <b>確認</b></li><li>7 ミカエルパシャ: AI順位5位 / 人気6番人気 / ズレ+1 / 妙味スコア70 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都10RこれAI的には2番メディテラニアンが普通に気になる
-買うなら少額、無理はしない感じ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 候補止まり</div>
-            <div>新潟5R 未勝利・若</div>
-            <div>推奨: 馬連・ワイド</div>
-            <p>AI評価は上位ですが、条件が少し足りません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟5R 未勝利・若 芝1200m</h2>
-              <div class="chips"><span class="grade">B</span><span class="odds">単勝6.8倍 / 3番人気</span><span class="rough">荒れそう</span><span class='label'>候補止まり</span><span class='label'>ワイド向き</span><span class='label'>馬連向き</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎12 メイショウピュルテ AI16.36 / 勝率6.8% / 複勝28.1%</li><li>2位 ○16 マイネルユーゲント AI12.60 / 勝率7.1% / 複勝19.3%</li><li>3位 ▲7 ハルヒメ AI12.12 / 勝率7.1% / 複勝18.3%</li><li>4位 △8 ニシノタチアナ AI11.73 / 勝率6.3% / 複勝18.3%</li><li>5位 ☆4 スカイプレリュード AI11.64 / 勝率6.0% / 複勝18.6%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>12</span></div>
-            <div><b>複勝:</b> <span class='ticket'>12</span></div>
-            <div><b>馬連:</b> <span class='ticket'>12-16</span><span class='ticket'>7-12</span><span class='ticket'>7-16</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>12-16</span><span class='ticket'>7-12</span></div>
-            <div><b>三連複:</b> <span class='ticket'>7-12-16</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 12
-複勝 12
-馬連 12-16
-馬連 7-12
-馬連 7-16
-ワイド 12-16
-ワイド 7-12
-三連複 7-12-16</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010305&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010305' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率28.1%</li><li>勝率6.8%</li><li>単勝6.8倍</li><li>荒れ度: 荒れそう</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎12 メイショウピュルテ: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>○16 マイネルユーゲント: 距離適性あり</li><li>▲7 ハルヒメ: 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>△8 ニシノタチアナ: AI上は大きな強調材料少なめ</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアは標準以上 / 複勝率評価は悪くない / 勝率評価が低い / 1位と2位に差がある / 上位5頭はやや差あり</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>12 メイショウピュルテ: AI順位1位 / 人気3番人気 / ズレ+2 / 妙味スコア67 <b>確認</b></li><li>7 ハルヒメ: AI順位3位 / 人気14番人気 / ズレ+11 / 妙味スコア100 <b>妙味あり</b></li><li>8 ニシノタチアナ: AI順位4位 / 人気9番人気 / ズレ+5 / 妙味スコア99 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟5RこれAI的には12番メイショウピュルテが普通に気になる
-買うなら少額、無理はしない感じ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 候補止まり</div>
-            <div>京都12R 2勝ｸﾗｽ</div>
-            <div>推奨: 見送り</div>
-            <p>AI評価は上位ですが、条件が少し足りません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都12R 2勝ｸﾗｽ ダ1800m</h2>
-              <div class="chips"><span class="grade">C</span><span class="odds">単勝7.7倍 / 5番人気</span><span class="rough">堅そう</span><span class='label'>候補止まり</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎7 ニホンピロデヴィン AI16.13 / 勝率13.8% / 複勝19.0%</li><li>2位 ○3 メイショウヤシマ AI13.41 / 勝率9.2% / 複勝18.6%</li><li>3位 ▲8 ロードヴォイジャー AI13.33 / 勝率8.5% / 複勝19.2%</li><li>4位 △13 サイモンシュバリエ AI13.01 / 勝率8.8% / 複勝18.2%</li><li>5位 ☆9 メイショウオオコ AI12.88 / 勝率7.3% / 複勝19.7%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>7</span></div>
-            <div><b>複勝:</b> <span class='ticket'>7</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>3-7</span><span class='ticket'>7-8</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-7-8</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 7
-複勝 7
-ワイド 3-7
-ワイド 7-8
-三連複 3-7-8</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030512&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030512' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率19.0%</li><li>勝率13.8%</li><li>単勝7.7倍</li><li>荒れ度: 堅そう</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎7 ニホンピロデヴィン: 同じ芝ダ条件で好走傾向</li><li>○3 メイショウヤシマ: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲8 ロードヴォイジャー: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>△13 サイモンシュバリエ: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアは標準以上 / 複勝率評価が弱い / 勝率評価は悪くない / 1位と2位に少し差がある / 上位5頭はやや差あり</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>7 ニホンピロデヴィン: AI順位1位 / 人気5番人気 / ズレ+4 / 妙味スコア78 <b>妙味あり</b></li><li>3 メイショウヤシマ: AI順位2位 / 人気4番人気 / ズレ+2 / 妙味スコア56 <b>確認</b></li><li>13 サイモンシュバリエ: AI順位4位 / 人気9番人気 / ズレ+5 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都12RこれAI的には7番ニホンピロデヴィンが普通に気になる
-買うなら少額、無理はしない感じ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 候補止まり</div>
-            <div>京都5R 1勝ｸﾗｽ*</div>
-            <div>推奨: 見送り</div>
-            <p>AI評価は上位ですが、条件が少し足りません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都5R 1勝ｸﾗｽ* 芝1600m</h2>
-              <div class="chips"><span class="grade">C</span><span class="odds">単勝10.7倍 / 6番人気</span><span class="rough">大荒れ注意</span><span class='label'>候補止まり</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎7 コルテオソレイユ AI15.93 / 勝率13.4% / 複勝19.0%</li><li>2位 ○3 ダークマルス AI15.39 / 勝率12.7% / 複勝18.6%</li><li>3位 ▲8 ナムラヒナギク AI15.13 / 勝率13.9% / 複勝16.6%</li><li>4位 △2 ルートサーティーン AI14.57 / 勝率12.6% / 複勝17.0%</li><li>5位 ☆1 マイリトルヒーロー AI14.43 / 勝率11.8% / 複勝17.7%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>7</span></div>
-            <div><b>複勝:</b> <span class='ticket'>7</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>3-7</span><span class='ticket'>7-8</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-7-8</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 7
-複勝 7
-ワイド 3-7
-ワイド 7-8
-三連複 3-7-8</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030505&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030505' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率19.0%</li><li>勝率13.4%</li><li>単勝10.7倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎7 コルテオソレイユ: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>○3 ダークマルス: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲8 ナムラヒナギク: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>△2 ルートサーティーン: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアは標準以上 / 複勝率評価が弱い / 勝率評価は悪くない / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>7 コルテオソレイユ: AI順位1位 / 人気6番人気 / ズレ+5 / 妙味スコア91 <b>妙味あり</b></li><li>8 ナムラヒナギク: AI順位3位 / 人気7番人気 / ズレ+4 / 妙味スコア87 <b>妙味あり</b></li><li>2 ルートサーティーン: AI順位4位 / 人気5番人気 / ズレ+1 / 妙味スコア56 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都5RこれAI的には7番コルテオソレイユが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 候補止まり</div>
-            <div>新潟4R 障害・オープ</div>
-            <div>推奨: 見送り</div>
-            <p>AI評価は上位ですが、条件が少し足りません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟4R 障害・オープ 芝2890m</h2>
-              <div class="chips"><span class="grade">C</span><span class="odds">単勝4.4倍 / 2番人気</span><span class="rough">やや荒れ</span><span class='label'>候補止まり</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎10 バルサムノート AI15.78 / 勝率12.5% / 複勝19.8%</li><li>2位 ○6 ロードリベラシオン AI14.55 / 勝率10.3% / 複勝19.8%</li><li>3位 ▲2 スコラーリ AI13.93 / 勝率9.2% / 複勝19.6%</li><li>4位 △4 ローンウルフ AI13.61 / 勝率9.9% / 複勝18.1%</li><li>5位 ☆8 ジーティーオウジャ AI13.40 / 勝率9.0% / 複勝18.8%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>10</span></div>
-            <div><b>複勝:</b> <span class='ticket'>10</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>6-10</span><span class='ticket'>2-10</span></div>
-            <div><b>三連複:</b> <span class='ticket'>2-6-10</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 10
-複勝 10
-ワイド 6-10
-ワイド 2-10
-三連複 2-6-10</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010304&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010304' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率19.8%</li><li>勝率12.5%</li><li>単勝4.4倍</li><li>荒れ度: やや荒れ</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎10 バルサムノート: 過去の馬券内率が高い / 距離適性あり / 騎手成績もプラス</li><li>○6 ロードリベラシオン: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲2 スコラーリ: 同じ芝ダ条件で好走傾向 / 距離適性あり / 騎手成績もプラス</li><li>△4 ローンウルフ: 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアは標準以上 / 複勝率評価が弱い / 勝率評価は悪くない / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>10 バルサムノート: AI順位1位 / 人気2番人気 / ズレ+1 / 妙味スコア48 <b>確認</b></li><li>6 ロードリベラシオン: AI順位2位 / 人気4番人気 / ズレ+2 / 妙味スコア60 <b>確認</b></li><li>2 スコラーリ: AI順位3位 / 人気5番人気 / ズレ+2 / 妙味スコア61 <b>確認</b></li><li>4 ローンウルフ: AI順位4位 / 人気11番人気 / ズレ+7 / 妙味スコア100 <b>妙味あり</b></li><li>8 ジーティーオウジャ: AI順位5位 / 人気10番人気 / ズレ+5 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟4RこれAI的には10番バルサムノートが普通に気になる
-買うなら少額、無理はしない感じ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 候補止まり</div>
-            <div>新潟1R 障害未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>AI評価は上位ですが、条件が少し足りません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟1R 障害未勝利 芝2890m</h2>
-              <div class="chips"><span class="grade">C</span><span class="odds">単勝5.9倍 / 3番人気</span><span class="rough">大荒れ注意</span><span class='label'>候補止まり</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎13 マグナレガリア AI15.54 / 勝率9.2% / 複勝23.2%</li><li>2位 ○7 コスモアミマネラ AI14.59 / 勝率8.3% / 複勝22.2%</li><li>3位 ▲8 クリアクォーツ AI14.41 / 勝率9.0% / 複勝21.0%</li><li>4位 △2 ブラックバラード AI14.20 / 勝率8.6% / 複勝21.1%</li><li>5位 ☆4 マーゴットソラーレ AI13.91 / 勝率8.6% / 複勝20.4%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>13</span></div>
-            <div><b>複勝:</b> <span class='ticket'>13</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>7-13</span><span class='ticket'>8-13</span></div>
-            <div><b>三連複:</b> <span class='ticket'>7-8-13</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 13
-複勝 13
-ワイド 7-13
-ワイド 8-13
-三連複 7-8-13</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010301&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010301' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率23.2%</li><li>勝率9.2%</li><li>単勝5.9倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎13 マグナレガリア: 近走着順が安定 / 距離適性あり / 騎手成績もプラス</li><li>○7 コスモアミマネラ: 近走着順が安定 / 距離適性あり</li><li>▲8 クリアクォーツ: AI上は大きな強調材料少なめ</li><li>△2 ブラックバラード: 近走着順が安定 / 距離適性あり / 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアは標準以上 / 複勝率評価は最低限あり / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>13 マグナレガリア: AI順位1位 / 人気3番人気 / ズレ+2 / 妙味スコア61 <b>確認</b></li><li>8 クリアクォーツ: AI順位3位 / 人気13番人気 / ズレ+10 / 妙味スコア100 <b>妙味あり</b></li><li>2 ブラックバラード: AI順位4位 / 人気5番人気 / ズレ+1 / 妙味スコア53 <b>確認</b></li><li>4 マーゴットソラーレ: AI順位5位 / 人気7番人気 / ズレ+2 / 妙味スコア91 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟1RこれAI的には13番マグナレガリアが普通に気になる
-買うなら少額、無理はしない感じ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 候補止まり</div>
-            <div>新潟10R 粟島特別･1勝</div>
-            <div>推奨: 見送り</div>
-            <p>AI評価は上位ですが、条件が少し足りません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟10R 粟島特別･1勝 芝1800m</h2>
-              <div class="chips"><span class="grade">C</span><span class="odds">単勝54.4倍 / 8番人気</span><span class="rough">大荒れ注意</span><span class='label'>候補止まり</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎2 ドーギッド AI15.20 / 勝率10.5% / 複勝21.0%</li><li>2位 ○10 シャインフリーリー AI13.89 / 勝率10.5% / 複勝18.0%</li><li>3位 ▲5 トゥルーサクセサー AI13.81 / 勝率7.7% / 複勝21.3%</li><li>4位 △3 スピンザブラッド AI13.56 / 勝率7.5% / 複勝21.0%</li><li>5位 ☆9 テンドリームガール AI13.16 / 勝率7.7% / 複勝19.8%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>2</span></div>
-            <div><b>複勝:</b> <span class='ticket'>2</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>2-10</span><span class='ticket'>2-5</span></div>
-            <div><b>三連複:</b> <span class='ticket'>2-5-10</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 2
-複勝 2
-ワイド 2-10
-ワイド 2-5
-三連複 2-5-10</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010310&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010310' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率21.0%</li><li>勝率10.5%</li><li>単勝54.4倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎2 ドーギッド: AI上は大きな強調材料少なめ</li><li>○10 シャインフリーリー: AI上は大きな強調材料少なめ</li><li>▲5 トゥルーサクセサー: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向</li><li>△3 スピンザブラッド: 近走着順が安定 / 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアは標準以上 / 複勝率評価が弱い / 勝率評価は悪くない / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>2 ドーギッド: AI順位1位 / 人気8番人気 / ズレ+7 / 妙味スコア100 <b>妙味あり</b></li><li>10 シャインフリーリー: AI順位2位 / 人気11番人気 / ズレ+9 / 妙味スコア100 <b>妙味あり</b></li><li>5 トゥルーサクセサー: AI順位3位 / 人気4番人気 / ズレ+1 / 妙味スコア82 <b>確認</b></li><li>3 スピンザブラッド: AI順位4位 / 人気6番人気 / ズレ+2 / 妙味スコア91 <b>確認</b></li><li>9 テンドリームガール: AI順位5位 / 人気9番人気 / ズレ+4 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟10RこれAI的には2番ドーギッドが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 候補止まり</div>
-            <div>東京4R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>AI評価は上位ですが、条件が少し足りません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京4R 未勝利 芝2400m</h2>
-              <div class="chips"><span class="grade">C</span><span class="odds">単勝11.0倍 / 5番人気</span><span class="rough">大荒れ注意</span><span class='label'>候補止まり</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎6 ガードオブオナー AI15.12 / 勝率10.2% / 複勝21.1%</li><li>2位 ○4 ニシノヒノトリ AI14.28 / 勝率10.2% / 複勝19.3%</li><li>3位 ▲3 ボンボンベイビー AI14.18 / 勝率8.9% / 複勝20.6%</li><li>4位 △10 フォンドルレール AI13.75 / 勝率9.5% / 複勝19.0%</li><li>5位 ☆8 クイーンアン AI13.41 / 勝率10.3% / 複勝17.3%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>6</span></div>
-            <div><b>複勝:</b> <span class='ticket'>6</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>4-6</span><span class='ticket'>3-6</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-4-6</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 6
-複勝 6
-ワイド 4-6
-ワイド 3-6
-三連複 3-4-6</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020504&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020504' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率21.1%</li><li>勝率10.2%</li><li>単勝11.0倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎6 ガードオブオナー: 距離適性あり / 騎手成績もプラス</li><li>○4 ニシノヒノトリ: 近走着順が安定</li><li>▲3 ボンボンベイビー: AI上は大きな強調材料少なめ</li><li>△10 フォンドルレール: AI上は大きな強調材料少なめ</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアは標準以上 / 複勝率評価が弱い / 勝率評価は悪くない / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>6 ガードオブオナー: AI順位1位 / 人気5番人気 / ズレ+4 / 妙味スコア84 <b>妙味あり</b></li><li>4 ニシノヒノトリ: AI順位2位 / 人気3番人気 / ズレ+1 / 妙味スコア48 <b>確認</b></li><li>3 ボンボンベイビー: AI順位3位 / 人気7番人気 / ズレ+4 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京4RこれAI的には6番ガードオブオナーが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 候補止まり</div>
-            <div>東京5R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>AI評価は上位ですが、条件が少し足りません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京5R 未勝利 芝1400m</h2>
-              <div class="chips"><span class="grade">C</span><span class="odds">単勝2.2倍 / 1番人気</span><span class="rough">やや荒れ</span><span class='label'>候補止まり</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎9 グランマエストロ AI14.08 / 勝率7.9% / 複勝21.6%</li><li>2位 ○11 ワディアルリヤハ AI12.41 / 勝率6.6% / 複勝19.5%</li><li>3位 ▲13 カズノダイジョウ AI11.86 / 勝率6.3% / 複勝18.7%</li><li>4位 △1 イトシサ AI11.80 / 勝率5.8% / 複勝19.1%</li><li>5位 ☆7 ブロークンハート AI10.83 / 勝率5.6% / 複勝17.2%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>9</span></div>
-            <div><b>複勝:</b> <span class='ticket'>9</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>9-11</span><span class='ticket'>9-13</span></div>
-            <div><b>三連複:</b> <span class='ticket'>9-11-13</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 9
-複勝 9
-ワイド 9-11
-ワイド 9-13
-三連複 9-11-13</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020505&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020505' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率21.6%</li><li>勝率7.9%</li><li>単勝2.2倍</li><li>荒れ度: やや荒れ</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎9 グランマエストロ: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○11 ワディアルリヤハ: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲13 カズノダイジョウ: 距離適性あり</li><li>△1 イトシサ: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位に少し差がある / 上位5頭はやや差あり</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>11 ワディアルリヤハ: AI順位2位 / 人気3番人気 / ズレ+1 / 妙味スコア54 <b>確認</b></li><li>13 カズノダイジョウ: AI順位3位 / 人気5番人気 / ズレ+2 / 妙味スコア68 <b>確認</b></li><li>7 ブロークンハート: AI順位5位 / 人気11番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京5RこれAI的には9番グランマエストロが普通に気になる
-買うなら少額、無理はしない感じ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>新潟8R 1勝ｸﾗｽ・牝</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟8R 1勝ｸﾗｽ・牝 ダ1800m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝41.9倍 / 7番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎15 サラサラヘアー AI14.96 / 勝率9.9% / 複勝21.2%</li><li>2位 ○10 ベルフィーヌ AI13.07 / 勝率7.5% / 複勝19.9%</li><li>3位 ▲5 ラグナトーレ AI12.29 / 勝率8.0% / 複勝17.6%</li><li>4位 △9 ライヴスプーン AI12.24 / 勝率6.4% / 複勝19.4%</li><li>5位 ☆3 ヴァズレーヌ AI12.19 / 勝率7.4% / 複勝18.0%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>15</span></div>
-            <div><b>複勝:</b> <span class='ticket'>15</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>10-15</span><span class='ticket'>5-15</span></div>
-            <div><b>三連複:</b> <span class='ticket'>5-10-15</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 15
-複勝 15
-ワイド 10-15
-ワイド 5-15
-三連複 5-10-15</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010308&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010308' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率21.2%</li><li>勝率9.9%</li><li>単勝41.9倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎15 サラサラヘアー: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向</li><li>○10 ベルフィーヌ: 近走着順が安定</li><li>▲5 ラグナトーレ: AI上は大きな強調材料少なめ</li><li>△9 ライヴスプーン: AI上は大きな強調材料少なめ</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位に少し差がある / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>15 サラサラヘアー: AI順位1位 / 人気7番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li><li>10 ベルフィーヌ: AI順位2位 / 人気9番人気 / ズレ+7 / 妙味スコア100 <b>妙味あり</b></li><li>5 ラグナトーレ: AI順位3位 / 人気8番人気 / ズレ+5 / 妙味スコア100 <b>妙味あり</b></li><li>9 ライヴスプーン: AI順位4位 / 人気5番人気 / ズレ+1 / 妙味スコア81 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟8RこれAI的には15番サラサラヘアーが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>京都9R 久御山特･2勝</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都9R 久御山特･2勝 芝1600m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝16.2倍 / 7番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎3 スナークピカソ AI14.94 / 勝率11.5% / 複勝19.1%</li><li>2位 ○7 ウォータークラーク AI14.91 / 勝率10.4% / 複勝20.5%</li><li>3位 ▲10 クスクス AI14.59 / 勝率11.6% / 複勝18.3%</li><li>4位 △6 ダイヤモンドハンズ AI14.23 / 勝率10.1% / 複勝19.3%</li><li>5位 ☆11 マルカオペラ AI14.10 / 勝率9.7% / 複勝19.5%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>3</span></div>
-            <div><b>複勝:</b> <span class='ticket'>3</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>3-7</span><span class='ticket'>3-10</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-7-10</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 3
-複勝 3
-ワイド 3-7
-ワイド 3-10
-三連複 3-7-10</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030509&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030509' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率19.1%</li><li>勝率11.5%</li><li>単勝16.2倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎3 スナークピカソ: 近走着順が安定 / 距離適性あり / 騎手成績もプラス</li><li>○7 ウォータークラーク: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲10 クスクス: 距離適性あり / 騎手成績もプラス</li><li>△6 ダイヤモンドハンズ: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は悪くない / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>3 スナークピカソ: AI順位1位 / 人気7番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li><li>7 ウォータークラーク: AI順位2位 / 人気3番人気 / ズレ+1 / 妙味スコア57 <b>確認</b></li><li>10 クスクス: AI順位3位 / 人気10番人気 / ズレ+7 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都9RこれAI的には3番スナークピカソが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>東京7R 1勝ｸﾗｽ</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京7R 1勝ｸﾗｽ ダ2100m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝27.0倍 / 8番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎13 ブラックタロー AI14.92 / 勝率6.1% / 複勝25.6%</li><li>2位 ○14 ローズマイスター AI14.38 / 勝率8.3% / 複勝21.8%</li><li>3位 ▲12 カサビセンス AI14.06 / 勝率8.3% / 複勝21.1%</li><li>4位 △4 シドニーホバート AI13.95 / 勝率8.4% / 複勝20.8%</li><li>5位 ☆10 マウントバーノン AI13.42 / 勝率8.3% / 複勝19.7%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>13</span></div>
-            <div><b>複勝:</b> <span class='ticket'>13</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>13-14</span><span class='ticket'>12-13</span></div>
-            <div><b>三連複:</b> <span class='ticket'>12-13-14</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 13
-複勝 13
-ワイド 13-14
-ワイド 12-13
-三連複 12-13-14</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020507&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020507' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率25.6%</li><li>勝率6.1%</li><li>単勝27.0倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎13 ブラックタロー: AI上は大きな強調材料少なめ</li><li>○14 ローズマイスター: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 騎手成績もプラス</li><li>▲12 カサビセンス: 騎手成績もプラス</li><li>△4 シドニーホバート: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価は最低限あり / 勝率評価が低い / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>13 ブラックタロー: AI順位1位 / 人気8番人気 / ズレ+7 / 妙味スコア100 <b>妙味あり</b></li><li>12 カサビセンス: AI順位3位 / 人気14番人気 / ズレ+11 / 妙味スコア100 <b>妙味あり</b></li><li>10 マウントバーノン: AI順位5位 / 人気9番人気 / ズレ+4 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京7RこれAI的には13番ブラックタローが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>東京6R 1勝ｸﾗｽ*</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京6R 1勝ｸﾗｽ* 芝1800m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝26.0倍 / 8番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎12 アメテュストス AI14.51 / 勝率9.4% / 複勝20.7%</li><li>2位 ○8 マイネルシンベリン AI14.12 / 勝率9.0% / 複勝20.4%</li><li>3位 ▲3 ナックホワイト AI13.84 / 勝率9.6% / 複勝19.0%</li><li>4位 △4 ショウナンダイン AI13.79 / 勝率9.0% / 複勝19.7%</li><li>5位 ☆7 テイエムスティール AI13.58 / 勝率8.9% / 複勝19.3%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>12</span></div>
-            <div><b>複勝:</b> <span class='ticket'>12</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>8-12</span><span class='ticket'>3-12</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-8-12</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 12
-複勝 12
-ワイド 8-12
-ワイド 3-12
-三連複 3-8-12</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020506&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020506' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率20.7%</li><li>勝率9.4%</li><li>単勝26.0倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎12 アメテュストス: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>○8 マイネルシンベリン: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲3 ナックホワイト: 近走着順が安定</li><li>△4 ショウナンダイン: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>12 アメテュストス: AI順位1位 / 人気8番人気 / ズレ+7 / 妙味スコア100 <b>妙味あり</b></li><li>8 マイネルシンベリン: AI順位2位 / 人気9番人気 / ズレ+7 / 妙味スコア100 <b>妙味あり</b></li><li>3 ナックホワイト: AI順位3位 / 人気7番人気 / ズレ+4 / 妙味スコア97 <b>妙味あり</b></li><li>4 ショウナンダイン: AI順位4位 / 人気12番人気 / ズレ+8 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京6RこれAI的には12番アメテュストスが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>京都1R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都1R 未勝利 ダ1400m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝10.6倍 / 6番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎5 キープシャイニング AI14.05 / 勝率7.4% / 複勝22.2%</li><li>2位 ○7 ジャーナーリア AI13.12 / 勝率7.8% / 複勝19.7%</li><li>3位 ▲15 オウケンブラッド AI13.10 / 勝率6.5% / 複勝21.2%</li><li>4位 △3 マクアケ AI12.94 / 勝率7.2% / 複勝19.9%</li><li>5位 ☆10 アーガイルショア AI12.70 / 勝率6.5% / 複勝20.2%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>5</span></div>
-            <div><b>複勝:</b> <span class='ticket'>5</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>5-7</span><span class='ticket'>5-15</span></div>
-            <div><b>三連複:</b> <span class='ticket'>5-7-15</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 5
-複勝 5
-ワイド 5-7
-ワイド 5-15
-三連複 5-7-15</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030501&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030501' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率22.2%</li><li>勝率7.4%</li><li>単勝10.6倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎5 キープシャイニング: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○7 ジャーナーリア: 近走着順が安定 / 騎手成績もプラス</li><li>▲15 オウケンブラッド: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>△3 マクアケ: 近走着順が安定 / 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価は最低限あり / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>5 キープシャイニング: AI順位1位 / 人気6番人気 / ズレ+5 / 妙味スコア91 <b>妙味あり</b></li><li>3 マクアケ: AI順位4位 / 人気8番人気 / ズレ+4 / 妙味スコア98 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都1RこれAI的には5番キープシャイニングが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>東京1R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京1R 未勝利 ダ1300m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝13.4倍 / 9番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎8 コウソクルリアン AI14.01 / 勝率8.4% / 複勝20.9%</li><li>2位 ○3 ジャガーライズ AI13.86 / 勝率7.7% / 複勝21.4%</li><li>3位 ▲16 フェイスリフト AI13.72 / 勝率8.6% / 複勝20.0%</li><li>4位 △14 ショコラキュイ AI12.73 / 勝率7.2% / 複勝19.5%</li><li>5位 ☆5 エリンフレーム AI12.56 / 勝率6.7% / 複勝19.8%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>8</span></div>
-            <div><b>複勝:</b> <span class='ticket'>8</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>3-8</span><span class='ticket'>8-16</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-8-16</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 8
-複勝 8
-ワイド 3-8
-ワイド 8-16
-三連複 3-8-16</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020501&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020501' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率20.9%</li><li>勝率8.4%</li><li>単勝13.4倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎8 コウソクルリアン: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>○3 ジャガーライズ: AI上は大きな強調材料少なめ</li><li>▲16 フェイスリフト: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>△14 ショコラキュイ: 近走着順が安定 / 距離適性あり / 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>8 コウソクルリアン: AI順位1位 / 人気9番人気 / ズレ+8 / 妙味スコア100 <b>妙味あり</b></li><li>3 ジャガーライズ: AI順位2位 / 人気15番人気 / ズレ+13 / 妙味スコア100 <b>妙味あり</b></li><li>14 ショコラキュイ: AI順位4位 / 人気7番人気 / ズレ+3 / 妙味スコア73 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京1RこれAI的には8番コウソクルリアンが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>京都7R 1勝ｸﾗｽ</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都7R 1勝ｸﾗｽ ダ1900m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝30.8倍 / 6番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎8 テンエースワン AI14.00 / 勝率10.3% / 複勝18.5%</li><li>2位 ○5 ステイクオール AI13.72 / 勝率10.3% / 複勝17.9%</li><li>3位 ▲6 ガーデンカメリア AI13.44 / 勝率9.9% / 複勝17.7%</li><li>4位 △11 メイショウコナン AI13.15 / 勝率9.9% / 複勝17.1%</li><li>5位 ☆3 ロードシュヴァリエ AI12.82 / 勝率9.9% / 複勝16.4%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>8</span></div>
-            <div><b>複勝:</b> <span class='ticket'>8</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>5-8</span><span class='ticket'>6-8</span></div>
-            <div><b>三連複:</b> <span class='ticket'>5-6-8</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 8
-複勝 8
-ワイド 5-8
-ワイド 6-8
-三連複 5-6-8</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030507&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030507' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率18.5%</li><li>勝率10.3%</li><li>単勝30.8倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎8 テンエースワン: 過去の馬券内率が高い / 騎手成績もプラス</li><li>○5 ステイクオール: 騎手成績もプラス</li><li>▲6 ガーデンカメリア: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向</li><li>△11 メイショウコナン: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は悪くない / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>8 テンエースワン: AI順位1位 / 人気6番人気 / ズレ+5 / 妙味スコア100 <b>妙味あり</b></li><li>5 ステイクオール: AI順位2位 / 人気3番人気 / ズレ+1 / 妙味スコア47 <b>確認</b></li><li>6 ガーデンカメリア: AI順位3位 / 人気5番人気 / ズレ+2 / 妙味スコア79 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都7RこれAI的には8番テンエースワンが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>京都3R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都3R 未勝利 芝1400m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝34.7倍 / 7番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎15 アンジュラフィーユ AI13.81 / 勝率7.3% / 複勝21.7%</li><li>2位 ○6 チュウワメロディー AI13.28 / 勝率7.5% / 複勝20.3%</li><li>3位 ▲3 モンシーク AI12.51 / 勝率6.6% / 複勝19.7%</li><li>4位 △10 キングケープ AI11.38 / 勝率6.0% / 複勝18.0%</li><li>5位 ☆11 ビタールート AI11.32 / 勝率6.6% / 複勝17.1%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>15</span></div>
-            <div><b>複勝:</b> <span class='ticket'>15</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>6-15</span><span class='ticket'>3-15</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-6-15</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 15
-複勝 15
-ワイド 6-15
-ワイド 3-15
-三連複 3-6-15</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030503&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030503' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率21.7%</li><li>勝率7.3%</li><li>単勝34.7倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎15 アンジュラフィーユ: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 騎手成績もプラス</li><li>○6 チュウワメロディー: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲3 モンシーク: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>△10 キングケープ: 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>15 アンジュラフィーユ: AI順位1位 / 人気7番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li><li>6 チュウワメロディー: AI順位2位 / 人気3番人気 / ズレ+1 / 妙味スコア53 <b>確認</b></li><li>10 キングケープ: AI順位4位 / 人気5番人気 / ズレ+1 / 妙味スコア65 <b>確認</b></li><li>11 ビタールート: AI順位5位 / 人気6番人気 / ズレ+1 / 妙味スコア78 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都3RこれAI的には15番アンジュラフィーユが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>新潟7R 1勝ｸﾗｽ</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟7R 1勝ｸﾗｽ ダ1200m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝30.0倍 / 8番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎15 ナンヨークリスタル AI13.72 / 勝率7.9% / 複勝20.8%</li><li>2位 ○11 ミルミナーヴァ AI13.59 / 勝率7.6% / 複勝20.9%</li><li>3位 ▲1 ルクスマーベリック AI13.20 / 勝率8.3% / 複勝19.2%</li><li>4位 △4 アースミューズ AI12.74 / 勝率7.0% / 複勝19.7%</li><li>5位 ☆7 ゼットスパンキー AI12.57 / 勝率7.6% / 複勝18.7%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>15</span></div>
-            <div><b>複勝:</b> <span class='ticket'>15</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>11-15</span><span class='ticket'>1-15</span></div>
-            <div><b>三連複:</b> <span class='ticket'>1-11-15</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 15
-複勝 15
-ワイド 11-15
-ワイド 1-15
-三連複 1-11-15</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010307&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010307' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率20.8%</li><li>勝率7.9%</li><li>単勝30.0倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎15 ナンヨークリスタル: AI上は大きな強調材料少なめ</li><li>○11 ミルミナーヴァ: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲1 ルクスマーベリック: AI上は大きな強調材料少なめ</li><li>△4 アースミューズ: 近走着順が安定</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>15 ナンヨークリスタル: AI順位1位 / 人気8番人気 / ズレ+7 / 妙味スコア100 <b>妙味あり</b></li><li>11 ミルミナーヴァ: AI順位2位 / 人気6番人気 / ズレ+4 / 妙味スコア92 <b>妙味あり</b></li><li>1 ルクスマーベリック: AI順位3位 / 人気12番人気 / ズレ+9 / 妙味スコア100 <b>妙味あり</b></li><li>4 アースミューズ: AI順位4位 / 人気10番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟7RこれAI的には15番ナンヨークリスタルが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>新潟6R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟6R 未勝利 芝2000m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝13.1倍 / 5番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎9 ウインマニフィーク AI13.43 / 勝率8.7% / 複勝19.3%</li><li>2位 ○13 ダンツウルス AI12.14 / 勝率7.2% / 複勝18.1%</li><li>3位 ▲14 マコトアディントン AI12.05 / 勝率7.0% / 複勝18.2%</li><li>4位 △4 ビップジョワ AI11.89 / 勝率6.2% / 複勝18.8%</li><li>5位 ☆12 ナイトバード AI11.84 / 勝率7.3% / 複勝17.4%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>9</span></div>
-            <div><b>複勝:</b> <span class='ticket'>9</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>9-13</span><span class='ticket'>9-14</span></div>
-            <div><b>三連複:</b> <span class='ticket'>9-13-14</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 9
-複勝 9
-ワイド 9-13
-ワイド 9-14
-三連複 9-13-14</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010306&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010306' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率19.3%</li><li>勝率8.7%</li><li>単勝13.1倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎9 ウインマニフィーク: 近走着順が安定</li><li>○13 ダンツウルス: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲14 マコトアディントン: AI上は大きな強調材料少なめ</li><li>△4 ビップジョワ: AI上は大きな強調材料少なめ</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>9 ウインマニフィーク: AI順位1位 / 人気5番人気 / ズレ+4 / 妙味スコア85 <b>妙味あり</b></li><li>13 ダンツウルス: AI順位2位 / 人気7番人気 / ズレ+5 / 妙味スコア100 <b>妙味あり</b></li><li>14 マコトアディントン: AI順位3位 / 人気4番人気 / ズレ+1 / 妙味スコア48 <b>確認</b></li><li>4 ビップジョワ: AI順位4位 / 人気6番人気 / ズレ+2 / 妙味スコア73 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟6RこれAI的には9番ウインマニフィークが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>新潟9R ゆきつば･1勝</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟9R ゆきつば･1勝 芝1200m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝13.0倍 / 5番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎5 ミスターバッドガイ AI13.22 / 勝率9.3% / 複勝18.0%</li><li>2位 ○14 コパノトーマス AI12.93 / 勝率7.3% / 複勝19.8%</li><li>3位 ▲7 シュテルン AI12.67 / 勝率6.9% / 複勝19.7%</li><li>4位 △10 クラディスティーナ AI12.56 / 勝率8.4% / 複勝17.6%</li><li>5位 ☆12 デンプシー AI11.97 / 勝率6.6% / 複勝18.6%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>5</span></div>
-            <div><b>複勝:</b> <span class='ticket'>5</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>5-14</span><span class='ticket'>5-7</span></div>
-            <div><b>三連複:</b> <span class='ticket'>5-7-14</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 5
-複勝 5
-ワイド 5-14
-ワイド 5-7
-三連複 5-7-14</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010309&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010309' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率18.0%</li><li>勝率9.3%</li><li>単勝13.0倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎5 ミスターバッドガイ: AI上は大きな強調材料少なめ</li><li>○14 コパノトーマス: 過去の馬券内率が高い</li><li>▲7 シュテルン: 距離適性あり</li><li>△10 クラディスティーナ: AI上は大きな強調材料少なめ</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>5 ミスターバッドガイ: AI順位1位 / 人気5番人気 / ズレ+4 / 妙味スコア83 <b>妙味あり</b></li><li>14 コパノトーマス: AI順位2位 / 人気10番人気 / ズレ+8 / 妙味スコア100 <b>妙味あり</b></li><li>7 シュテルン: AI順位3位 / 人気14番人気 / ズレ+11 / 妙味スコア100 <b>妙味あり</b></li><li>10 クラディスティーナ: AI順位4位 / 人気13番人気 / ズレ+9 / 妙味スコア100 <b>妙味あり</b></li><li>12 デンプシー: AI順位5位 / 人気8番人気 / ズレ+3 / 妙味スコア86 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟9RこれAI的には5番ミスターバッドガイが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>新潟11R 駿風Ｓ･3勝</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟11R 駿風Ｓ･3勝 芝1000m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝90.0倍 / 16番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎10 トーアアイギス AI13.18 / 勝率15.4% / 複勝10.4%</li><li>2位 ○5 カウンターセブン AI12.47 / 勝率5.5% / 複勝20.9%</li><li>3位 ▲15 カウスリップ AI12.18 / 勝率5.1% / 複勝20.8%</li><li>4位 △16 シュラフ AI12.16 / 勝率5.5% / 複勝20.4%</li><li>5位 ☆14 ベイビーキッス AI11.99 / 勝率5.8% / 複勝19.6%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>10</span></div>
-            <div><b>複勝:</b> <span class='ticket'>10</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>5-10</span><span class='ticket'>10-15</span></div>
-            <div><b>三連複:</b> <span class='ticket'>5-10-15</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 10
-複勝 10
-ワイド 5-10
-ワイド 10-15
-三連複 5-10-15</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010311&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010311' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率10.4%</li><li>勝率15.4%</li><li>単勝90.0倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎10 トーアアイギス: 過去の馬券内率が高い / 騎手成績もプラス</li><li>○5 カウンターセブン: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲15 カウスリップ: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>△16 シュラフ: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価が高い / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>10 トーアアイギス: AI順位1位 / 人気16番人気 / ズレ+15 / 妙味スコア100 <b>妙味あり</b></li><li>16 シュラフ: AI順位4位 / 人気5番人気 / ズレ+1 / 妙味スコア53 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟11RこれAI的には10番トーアアイギスが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 穴候補</div>
-            <div>東京10R 青竜Ｓ</div>
-            <div>推奨: 見送り</div>
-            <p>人気よりAI評価が高めです</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京10R 青竜Ｓ ダ1600m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝14.1倍 / 6番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span><span class='label'>穴候補</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎13 アルデトップガン AI13.01 / 勝率7.8% / 複勝19.4%</li><li>2位 ○14 メイショウバルク AI12.97 / 勝率7.9% / 複勝19.2%</li><li>3位 ▲10 ドンエレクトス AI12.94 / 勝率7.5% / 複勝19.6%</li><li>4位 △1 サンライズケヴィン AI12.87 / 勝率7.7% / 複勝19.2%</li><li>5位 ☆4 エコロシード AI12.36 / 勝率6.9% / 複勝19.0%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>13</span></div>
-            <div><b>複勝:</b> <span class='ticket'>13</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>13-14</span><span class='ticket'>10-13</span></div>
-            <div><b>三連複:</b> <span class='ticket'>10-13-14</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 13
-複勝 13
-ワイド 13-14
-ワイド 10-13
-三連複 10-13-14</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020510&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020510' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率19.4%</li><li>勝率7.8%</li><li>単勝14.1倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎13 アルデトップガン: 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○14 メイショウバルク: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲10 ドンエレクトス: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>△1 サンライズケヴィン: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>13 アルデトップガン: AI順位1位 / 人気6番人気 / ズレ+5 / 妙味スコア94 <b>妙味あり</b></li><li>14 メイショウバルク: AI順位2位 / 人気8番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li><li>1 サンライズケヴィン: AI順位4位 / 人気7番人気 / ズレ+3 / 妙味スコア80 <b>確認</b></li><li>4 エコロシード: AI順位5位 / 人気10番人気 / ズレ+5 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京10RこれAI的には13番アルデトップガンが普通に気になる
-人気よりAI評価が高くて動画ネタにもなるやつ
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>東京8R 2勝ｸﾗｽ</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京8R 2勝ｸﾗｽ 芝2000m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝1.0倍 / 1番人気</span><span class="rough">やや荒れ</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎2 ウィッシュツリー AI18.99 / 勝率21.1% / 複勝16.4%</li><li>2位 ○6 カリーニョ AI18.54 / 勝率16.8% / 複勝20.6%</li><li>3位 ▲8 ショウナンマクベス AI14.05 / 勝率14.2% / 複勝13.9%</li><li>4位 △5 ミッドセンチュリー AI13.89 / 勝率13.1% / 複勝14.8%</li><li>5位 ☆3 エーデル AI12.09 / 勝率12.6% / 複勝11.5%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>2</span></div>
-            <div><b>複勝:</b> <span class='ticket'>2</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>2-6</span><span class='ticket'>2-8</span></div>
-            <div><b>三連複:</b> <span class='ticket'>2-6-8</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 2
-複勝 2
-ワイド 2-6
-ワイド 2-8
-三連複 2-6-8</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020508&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020508' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率16.4%</li><li>勝率21.1%</li><li>単勝1.0倍</li><li>荒れ度: やや荒れ</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎2 ウィッシュツリー: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○6 カリーニョ: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲8 ショウナンマクベス: 騎手成績もプラス</li><li>△5 ミッドセンチュリー: AI上は大きな強調材料少なめ</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが高め / 複勝率評価が弱い / 勝率評価が高い / 1位と2位が接戦 / 上位5頭に差がある</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>5 ミッドセンチュリー: AI順位4位 / 人気5番人気 / ズレ+1 / 妙味スコア64 <b>確認</b></li><li>3 エーデル: AI順位5位 / 人気6番人気 / ズレ+1 / 妙味スコア68 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京8RこれAI的には2番ウィッシュツリーが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>東京9R 分倍河原･3勝</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京9R 分倍河原･3勝 芝1600m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝5.8倍 / 3番人気</span><span class="rough">荒れそう</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎2 チャンネルトンネル AI15.24 / 勝率9.9% / 複勝21.8%</li><li>2位 ○7 アンパドゥ AI15.04 / 勝率10.2% / 複勝21.0%</li><li>3位 ▲8 アウフヘーベン AI14.75 / 勝率9.1% / 複勝21.7%</li><li>4位 △3 マテンロウブラボー AI14.74 / 勝率10.3% / 複勝20.2%</li><li>5位 ☆12 コルレオニス AI13.63 / 勝率10.6% / 複勝17.4%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>2</span></div>
-            <div><b>複勝:</b> <span class='ticket'>2</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>2-7</span><span class='ticket'>2-8</span></div>
-            <div><b>三連複:</b> <span class='ticket'>2-7-8</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 2
-複勝 2
-ワイド 2-7
-ワイド 2-8
-三連複 2-7-8</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020509&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020509' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率21.8%</li><li>勝率9.9%</li><li>単勝5.8倍</li><li>荒れ度: 荒れそう</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎2 チャンネルトンネル: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○7 アンパドゥ: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲8 アウフヘーベン: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>△3 マテンロウブラボー: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアは標準以上 / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>2 チャンネルトンネル: AI順位1位 / 人気3番人気 / ズレ+2 / 妙味スコア59 <b>確認</b></li><li>8 アウフヘーベン: AI順位3位 / 人気4番人気 / ズレ+1 / 妙味スコア53 <b>確認</b></li><li>3 マテンロウブラボー: AI順位4位 / 人気6番人気 / ズレ+2 / 妙味スコア62 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京9RこれAI的には2番チャンネルトンネルが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>新潟12R 1勝ｸﾗｽ</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟12R 1勝ｸﾗｽ ダ1800m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝3.3倍 / 2番人気</span><span class="rough">荒れそう</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎11 ハイクオリティ AI14.92 / 勝率9.9% / 複勝21.0%</li><li>2位 ○2 トーアケルキラ AI14.10 / 勝率9.3% / 複勝19.9%</li><li>3位 ▲12 マテンロウミラクル AI14.04 / 勝率9.5% / 複勝19.6%</li><li>4位 △7 キタノブレイク AI12.84 / 勝率8.6% / 複勝18.0%</li><li>5位 ☆9 ナムラジミー AI12.57 / 勝率8.7% / 複勝17.3%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>11</span></div>
-            <div><b>複勝:</b> <span class='ticket'>11</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>2-11</span><span class='ticket'>11-12</span></div>
-            <div><b>三連複:</b> <span class='ticket'>2-11-12</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 11
-複勝 11
-ワイド 2-11
-ワイド 11-12
-三連複 2-11-12</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010312&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010312' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率21.0%</li><li>勝率9.9%</li><li>単勝3.3倍</li><li>荒れ度: 荒れそう</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎11 ハイクオリティ: 近走着順が安定 / 騎手成績もプラス</li><li>○2 トーアケルキラ: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲12 マテンロウミラクル: AI上は大きな強調材料少なめ</li><li>△7 キタノブレイク: 距離適性あり</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>11 ハイクオリティ: AI順位1位 / 人気2番人気 / ズレ+1 / 妙味スコア46 <b>確認</b></li><li>2 トーアケルキラ: AI順位2位 / 人気4番人気 / ズレ+2 / 妙味スコア65 <b>確認</b></li><li>7 キタノブレイク: AI順位4位 / 人気10番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟12RこれAI的には11番ハイクオリティが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>東京2R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京2R 未勝利 ダ2100m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝4.9倍 / 3番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎3 サクセスゴールド AI14.71 / 勝率10.5% / 複勝19.9%</li><li>2位 ○10 ミーサーク AI14.69 / 勝率11.2% / 複勝19.0%</li><li>3位 ▲11 コスモラムバック AI13.97 / 勝率9.1% / 複勝19.9%</li><li>4位 △2 グスク AI13.68 / 勝率9.9% / 複勝18.3%</li><li>5位 ☆5 ユイノサダハル AI13.38 / 勝率10.2% / 複勝17.3%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>3</span></div>
-            <div><b>複勝:</b> <span class='ticket'>3</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>3-10</span><span class='ticket'>3-11</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-10-11</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 3
-複勝 3
-ワイド 3-10
-ワイド 3-11
-三連複 3-10-11</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020502&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020502' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率19.9%</li><li>勝率10.5%</li><li>単勝4.9倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎3 サクセスゴールド: AI上は大きな強調材料少なめ</li><li>○10 ミーサーク: 同じ芝ダ条件で好走傾向 / 距離適性あり / 騎手成績もプラス</li><li>▲11 コスモラムバック: AI上は大きな強調材料少なめ</li><li>△2 グスク: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は悪くない / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>3 サクセスゴールド: AI順位1位 / 人気3番人気 / ズレ+2 / 妙味スコア56 <b>確認</b></li><li>11 コスモラムバック: AI順位3位 / 人気6番人気 / ズレ+3 / 妙味スコア82 <b>確認</b></li><li>2 グスク: AI順位4位 / 人気5番人気 / ズレ+1 / 妙味スコア52 <b>確認</b></li><li>5 ユイノサダハル: AI順位5位 / 人気8番人気 / ズレ+3 / 妙味スコア88 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京2RこれAI的には3番サクセスゴールドが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>京都4R 未勝利・牝</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都4R 未勝利・牝 芝2000m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝7.6倍 / 4番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎10 カトマンズゴールド AI14.21 / 勝率9.0% / 複勝20.6%</li><li>2位 ○6 ティタノマキア AI13.33 / 勝率7.9% / 複勝20.0%</li><li>3位 ▲13 プレスバーン AI12.57 / 勝率6.6% / 複勝19.9%</li><li>4位 △14 ルクスキャンディ AI12.40 / 勝率7.3% / 複勝18.6%</li><li>5位 ☆2 パンチャマハブータ AI12.14 / 勝率7.0% / 複勝18.4%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>10</span></div>
-            <div><b>複勝:</b> <span class='ticket'>10</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>6-10</span><span class='ticket'>10-13</span></div>
-            <div><b>三連複:</b> <span class='ticket'>6-10-13</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 10
-複勝 10
-ワイド 6-10
-ワイド 10-13
-三連複 6-10-13</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030504&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030504' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率20.6%</li><li>勝率9.0%</li><li>単勝7.6倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎10 カトマンズゴールド: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○6 ティタノマキア: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲13 プレスバーン: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>△14 ルクスキャンディ: 近走着順が安定 / 距離適性あり</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>10 カトマンズゴールド: AI順位1位 / 人気4番人気 / ズレ+3 / 妙味スコア69 <b>確認</b></li><li>6 ティタノマキア: AI順位2位 / 人気3番人気 / ズレ+1 / 妙味スコア50 <b>確認</b></li><li>13 プレスバーン: AI順位3位 / 人気9番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li><li>14 ルクスキャンディ: AI順位4位 / 人気5番人気 / ズレ+1 / 妙味スコア70 <b>確認</b></li><li>2 パンチャマハブータ: AI順位5位 / 人気8番人気 / ズレ+3 / 妙味スコア96 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都4RこれAI的には10番カトマンズゴールドが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>新潟2R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟2R 未勝利 ダ1800m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝9.2倍 / 5番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎2 セブンワンダーズ AI14.19 / 勝率12.3% / 複勝16.6%</li><li>2位 ○8 ロードステラート AI14.13 / 勝率12.1% / 複勝16.6%</li><li>3位 ▲10 サンライズアーサー AI13.95 / 勝率12.4% / 複勝15.8%</li><li>4位 △5 メイショウセンドウ AI13.92 / 勝率11.7% / 複勝16.7%</li><li>5位 ☆3 ベストブラザーズ AI13.64 / 勝率12.4% / 複勝15.2%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>2</span></div>
-            <div><b>複勝:</b> <span class='ticket'>2</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>2-8</span><span class='ticket'>2-10</span></div>
-            <div><b>三連複:</b> <span class='ticket'>2-8-10</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 2
-複勝 2
-ワイド 2-8
-ワイド 2-10
-三連複 2-8-10</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010302&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010302' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率16.6%</li><li>勝率12.3%</li><li>単勝9.2倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎2 セブンワンダーズ: AI上は大きな強調材料少なめ</li><li>○8 ロードステラート: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲10 サンライズアーサー: AI上は大きな強調材料少なめ</li><li>△5 メイショウセンドウ: 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は悪くない / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>2 セブンワンダーズ: AI順位1位 / 人気5番人気 / ズレ+4 / 妙味スコア77 <b>妙味あり</b></li><li>10 サンライズアーサー: AI順位3位 / 人気6番人気 / ズレ+3 / 妙味スコア68 <b>確認</b></li><li>5 メイショウセンドウ: AI順位4位 / 人気7番人気 / ズレ+3 / 妙味スコア83 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟2RこれAI的には2番セブンワンダーズが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>京都11R 京都新聞G2</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都11R 京都新聞G2 芝2200m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝4.6倍 / 2番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎2 エムズビギン AI14.09 / 勝率9.2% / 複勝20.1%</li><li>2位 ○1 アーレムアレス AI13.57 / 勝率6.8% / 複勝21.9%</li><li>3位 ▲14 ステラスペース AI11.87 / 勝率6.8% / 複勝18.1%</li><li>4位 △6 ラディアントスター AI11.65 / 勝率6.1% / 複勝18.5%</li><li>5位 ☆12 キンググローリー AI11.62 / 勝率6.4% / 複勝18.0%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>2</span></div>
-            <div><b>複勝:</b> <span class='ticket'>2</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>1-2</span><span class='ticket'>2-14</span></div>
-            <div><b>三連複:</b> <span class='ticket'>1-2-14</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 2
-複勝 2
-ワイド 1-2
-ワイド 2-14
-三連複 1-2-14</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030511&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030511' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率20.1%</li><li>勝率9.2%</li><li>単勝4.6倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎2 エムズビギン: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○1 アーレムアレス: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲14 ステラスペース: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>△6 ラディアントスター: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>2 エムズビギン: AI順位1位 / 人気2番人気 / ズレ+1 / 妙味スコア47 <b>確認</b></li><li>1 アーレムアレス: AI順位2位 / 人気5番人気 / ズレ+3 / 妙味スコア100 <b>確認</b></li><li>14 ステラスペース: AI順位3位 / 人気15番人気 / ズレ+12 / 妙味スコア100 <b>妙味あり</b></li><li>6 ラディアントスター: AI順位4位 / 人気9番人気 / ズレ+5 / 妙味スコア100 <b>妙味あり</b></li><li>12 キンググローリー: AI順位5位 / 人気8番人気 / ズレ+3 / 妙味スコア95 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都11RこれAI的には2番エムズビギンが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>東京3R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京3R 未勝利 ダ1600m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝3.6倍 / 2番人気</span><span class="rough">荒れそう</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎9 トルネードアイル AI14.00 / 勝率8.7% / 複勝20.5%</li><li>2位 ○13 アンシュウマト AI12.73 / 勝率6.7% / 複勝20.1%</li><li>3位 ▲14 パンパネイラ AI12.58 / 勝率7.5% / 複勝18.8%</li><li>4位 △15 レイズテンペスト AI12.52 / 勝率6.8% / 複勝19.4%</li><li>5位 ☆3 ファイアリービート AI12.27 / 勝率7.2% / 複勝18.5%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>9</span></div>
-            <div><b>複勝:</b> <span class='ticket'>9</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>9-13</span><span class='ticket'>9-14</span></div>
-            <div><b>三連複:</b> <span class='ticket'>9-13-14</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 9
-複勝 9
-ワイド 9-13
-ワイド 9-14
-三連複 9-13-14</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020503&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020503' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率20.5%</li><li>勝率8.7%</li><li>単勝3.6倍</li><li>荒れ度: 荒れそう</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎9 トルネードアイル: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○13 アンシュウマト: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲14 パンパネイラ: AI上は大きな強調材料少なめ</li><li>△15 レイズテンペスト: 近走着順が安定 / 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>9 トルネードアイル: AI順位1位 / 人気2番人気 / ズレ+1 / 妙味スコア45 <b>確認</b></li><li>13 アンシュウマト: AI順位2位 / 人気3番人気 / ズレ+1 / 妙味スコア58 <b>確認</b></li><li>14 パンパネイラ: AI順位3位 / 人気5番人気 / ズレ+2 / 妙味スコア80 <b>確認</b></li><li>3 ファイアリービート: AI順位5位 / 人気6番人気 / ズレ+1 / 妙味スコア74 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京3RこれAI的には9番トルネードアイルが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>新潟3R 未勝利・牝</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 新潟3R 未勝利・牝 ダ1200m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝9.7倍 / 4番人気</span><span class="rough">荒れそう</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎9 スノーランス AI13.94 / 勝率8.3% / 複勝20.8%</li><li>2位 ○3 ラストシャイニー AI13.60 / 勝率9.0% / 複勝19.3%</li><li>3位 ▲12 グラマラス AI13.59 / 勝率6.2% / 複勝22.6%</li><li>4位 △13 プラチナムディスク AI12.70 / 勝率7.8% / 複勝18.8%</li><li>5位 ☆15 フレンズプラス AI12.46 / 勝率7.1% / 複勝19.1%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>9</span></div>
-            <div><b>複勝:</b> <span class='ticket'>9</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>3-9</span><span class='ticket'>9-12</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-9-12</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 9
-複勝 9
-ワイド 3-9
-ワイド 9-12
-三連複 3-9-12</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202604010303&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202604010303' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率20.8%</li><li>勝率8.3%</li><li>単勝9.7倍</li><li>荒れ度: 荒れそう</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎9 スノーランス: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○3 ラストシャイニー: AI上は大きな強調材料少なめ</li><li>▲12 グラマラス: AI上は大きな強調材料少なめ</li><li>△13 プラチナムディスク: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>9 スノーランス: AI順位1位 / 人気4番人気 / ズレ+3 / 妙味スコア72 <b>確認</b></li><li>13 プラチナムディスク: AI順位4位 / 人気7番人気 / ズレ+3 / 妙味スコア80 <b>確認</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>新潟3RこれAI的には9番スノーランスが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>京都8R 1勝ｸﾗｽ・牝</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都8R 1勝ｸﾗｽ・牝 ダ1400m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝6.4倍 / 2番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎1 ララバッカナール AI13.44 / 勝率7.3% / 複勝21.0%</li><li>2位 ○4 ヒミノエトワール AI13.40 / 勝率7.4% / 複勝20.7%</li><li>3位 ▲15 ルクスコスモス AI12.76 / 勝率6.9% / 複勝19.9%</li><li>4位 △3 リンゲルブルーメ AI12.25 / 勝率6.7% / 複勝19.1%</li><li>5位 ☆8 レイム AI11.60 / 勝率5.9% / 複勝18.5%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>1</span></div>
-            <div><b>複勝:</b> <span class='ticket'>1</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>1-4</span><span class='ticket'>1-15</span></div>
-            <div><b>三連複:</b> <span class='ticket'>1-4-15</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 1
-複勝 1
-ワイド 1-4
-ワイド 1-15
-三連複 1-4-15</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030508&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030508' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率21.0%</li><li>勝率7.3%</li><li>単勝6.4倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎1 ララバッカナール: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○4 ヒミノエトワール: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲15 ルクスコスモス: 近走着順が安定 / 距離適性あり</li><li>△3 リンゲルブルーメ: 距離適性あり / 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>1 ララバッカナール: AI順位1位 / 人気2番人気 / ズレ+1 / 妙味スコア50 <b>確認</b></li><li>4 ヒミノエトワール: AI順位2位 / 人気7番人気 / ズレ+5 / 妙味スコア96 <b>妙味あり</b></li><li>15 ルクスコスモス: AI順位3位 / 人気8番人気 / ズレ+5 / 妙味スコア100 <b>妙味あり</b></li><li>8 レイム: AI順位5位 / 人気11番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都8RこれAI的には1番ララバッカナールが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>京都2R 未勝利</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都2R 未勝利 ダ1800m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝5.5倍 / 1番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎4 ワンダーゾルダート AI13.27 / 勝率8.7% / 複勝18.8%</li><li>2位 ○14 ローメット AI12.56 / 勝率8.5% / 複勝17.6%</li><li>3位 ▲6 ピエナブラック AI12.13 / 勝率7.5% / 複勝17.7%</li><li>4位 △9 クロンヌジャン AI11.62 / 勝率6.9% / 複勝17.4%</li><li>5位 ☆1 メイショウゴッホ AI11.50 / 勝率6.3% / 複勝17.9%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>4</span></div>
-            <div><b>複勝:</b> <span class='ticket'>4</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>4-14</span><span class='ticket'>4-6</span></div>
-            <div><b>三連複:</b> <span class='ticket'>4-6-14</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 4
-複勝 4
-ワイド 4-14
-ワイド 4-6
-三連複 4-6-14</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030502&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030502' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率18.8%</li><li>勝率8.7%</li><li>単勝5.5倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎4 ワンダーゾルダート: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○14 ローメット: AI上は大きな強調材料少なめ</li><li>▲6 ピエナブラック: 騎手成績もプラス</li><li>△9 クロンヌジャン: 同じ芝ダ条件で好走傾向 / 騎手成績もプラス</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>14 ローメット: AI順位2位 / 人気7番人気 / ズレ+5 / 妙味スコア95 <b>妙味あり</b></li><li>6 ピエナブラック: AI順位3位 / 人気8番人気 / ズレ+5 / 妙味スコア95 <b>妙味あり</b></li><li>1 メイショウゴッホ: AI順位5位 / 人気11番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都2RこれAI的には4番ワンダーゾルダートが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>東京11R エプソムG3</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京11R エプソムG3 芝1800m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝8.2倍 / 5番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎14 サクラファレル AI12.89 / 勝率6.5% / 複勝20.8%</li><li>2位 ○10 センツブラッド AI12.58 / 勝率6.1% / 複勝20.4%</li><li>3位 ▲6 マジックサンズ AI12.52 / 勝率6.4% / 複勝20.0%</li><li>4位 △17 レガーロデルシエロ AI12.45 / 勝率6.4% / 複勝19.9%</li><li>5位 ☆11 トロヴァトーレ AI12.30 / 勝率6.0% / 複勝20.0%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>14</span></div>
-            <div><b>複勝:</b> <span class='ticket'>14</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>10-14</span><span class='ticket'>6-14</span></div>
-            <div><b>三連複:</b> <span class='ticket'>6-10-14</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 14
-複勝 14
-ワイド 10-14
-ワイド 6-14
-三連複 6-10-14</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020511&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020511' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率20.8%</li><li>勝率6.5%</li><li>単勝8.2倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎14 サクラファレル: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○10 センツブラッド: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲6 マジックサンズ: 距離適性あり</li><li>△17 レガーロデルシエロ: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価が低い / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>14 サクラファレル: AI順位1位 / 人気5番人気 / ズレ+4 / 妙味スコア76 <b>妙味あり</b></li><li>10 センツブラッド: AI順位2位 / 人気14番人気 / ズレ+12 / 妙味スコア100 <b>妙味あり</b></li><li>6 マジックサンズ: AI順位3位 / 人気9番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li><li>17 レガーロデルシエロ: AI順位4位 / 人気10番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京11RこれAI的には14番サクラファレルが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>東京12R 2勝ｸﾗｽ・牝</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 東京12R 2勝ｸﾗｽ・牝 ダ1400m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝4.2倍 / 2番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎8 ホウショウマリス AI12.69 / 勝率6.3% / 複勝20.5%</li><li>2位 ○3 モーニングマジック AI12.60 / 勝率6.5% / 複勝20.1%</li><li>3位 ▲11 フィドルファドル AI12.37 / 勝率6.7% / 複勝19.3%</li><li>4位 △13 オカメノコイ AI12.36 / 勝率8.8% / 複勝16.8%</li><li>5位 ☆14 ワイノナオミ AI12.27 / 勝率6.5% / 複勝19.3%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>8</span></div>
-            <div><b>複勝:</b> <span class='ticket'>8</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>3-8</span><span class='ticket'>8-11</span></div>
-            <div><b>三連複:</b> <span class='ticket'>3-8-11</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 8
-複勝 8
-ワイド 3-8
-ワイド 8-11
-三連複 3-8-11</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202605020512&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202605020512' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率20.5%</li><li>勝率6.3%</li><li>単勝4.2倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎8 ホウショウマリス: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>○3 モーニングマジック: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>▲11 フィドルファドル: 騎手成績もプラス</li><li>△13 オカメノコイ: 同じ芝ダ条件で好走傾向</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価が低い / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>8 ホウショウマリス: AI順位1位 / 人気2番人気 / ズレ+1 / 妙味スコア45 <b>確認</b></li><li>3 モーニングマジック: AI順位2位 / 人気4番人気 / ズレ+2 / 妙味スコア59 <b>確認</b></li><li>11 フィドルファドル: AI順位3位 / 人気8番人気 / ズレ+5 / 妙味スコア100 <b>妙味あり</b></li><li>13 オカメノコイ: AI順位4位 / 人気12番人気 / ズレ+8 / 妙味スコア100 <b>妙味あり</b></li><li>14 ワイノナオミ: AI順位5位 / 人気9番人気 / ズレ+4 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>東京12RこれAI的には8番ホウショウマリスが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-
-        <article class="card">
-          <div class="conclusion">
-            <div class="big">結論: 見送り</div>
-            <div>京都6R 1勝ｸﾗｽ*</div>
-            <div>推奨: 見送り</div>
-            <p>無理に買う条件ではありません</p>
-          </div>
-          <div class="card-head">
-            <div>
-              <h2>2026/05/09 京都6R 1勝ｸﾗｽ* ダ1200m</h2>
-              <div class="chips"><span class="grade">見送り</span><span class="odds">単勝54.8倍 / 14番人気</span><span class="rough">大荒れ注意</span><span class='label'>見送り</span></div>
-            </div>
-          </div>
-          
-          <div class="mark-box"><ol><li>1位 ◎6 ハードシングス AI12.52 / 勝率7.2% / 複勝19.0%</li><li>2位 ○14 ビップムーラン AI12.49 / 勝率7.2% / 複勝18.9%</li><li>3位 ▲13 ランスオブキング AI12.31 / 勝率7.1% / 複勝18.7%</li><li>4位 △2 セイウンバジリスク AI12.30 / 勝率7.0% / 複勝18.8%</li><li>5位 ☆15 キーンセンス AI12.28 / 勝率7.0% / 複勝18.8%</li></ol></div>
-          <div class="buy-box">
-            <h3>買い目</h3>
-            <div><b>単勝:</b> <span class='ticket'>6</span></div>
-            <div><b>複勝:</b> <span class='ticket'>6</span></div>
-            <div><b>馬連:</b> <span class='none'>見送り</span></div>
-            <div><b>ワイド:</b> <span class='ticket'>6-14</span><span class='ticket'>6-13</span></div>
-            <div><b>三連複:</b> <span class='ticket'>6-13-14</span></div>
-            <div><b>三連単:</b> <span class='none'>見送り</span></div>
-            <div class="money">点数: 3点 / 100円購入: 300円</div>
-          </div>
-          
-    <div class="copy-area">
-      <textarea class="copy-text" readonly>単勝 6
-複勝 6
-ワイド 6-14
-ワイド 6-13
-三連複 6-13-14</textarea>
-      <button class="copy-btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(this.previousElementSibling.value)">買い目コピー</button>
-    </div>
-    
-          <div class='links'><a href='https://race.netkeiba.com/odds/index.html?race_id=202608030506&type=b1' target='_blank'>netkeibaオッズ</a><a href='https://race.netkeiba.com/race/result.html?race_id=202608030506' target='_blank'>netkeiba結果</a><a href='https://www.jra.go.jp/' target='_blank'>JRA出馬表</a></div>
-          <details open><summary>短い理由</summary><ul class="reason-list"><li>AI評価1位</li><li>複勝率19.0%</li><li>勝率7.2%</li><li>単勝54.8倍</li><li>荒れ度: 大荒れ注意</li></ul></details>
-          <details><summary>各馬短評</summary><ul class="comments"><li>◎6 ハードシングス: 過去の馬券内率が高い / 近走着順が安定 / 騎手成績もプラス</li><li>○14 ビップムーラン: 過去の馬券内率が高い / 同じ芝ダ条件で好走傾向 / 距離適性あり</li><li>▲13 ランスオブキング: 過去の馬券内率が高い / 近走着順が安定 / 同じ芝ダ条件で好走傾向</li><li>△2 セイウンバジリスク: 距離適性あり</li></ul></details>
-          <details><summary>見送り理由・注意</summary><p class="muted">AI総合スコアが低め / 複勝率評価が弱い / 勝率評価は最低限あり / 1位と2位が接戦 / 上位5頭が混戦</p></details>
-          <details><summary>AIと人気のズレ・妙味</summary><ul><li>6 ハードシングス: AI順位1位 / 人気14番人気 / ズレ+13 / 妙味スコア100 <b>妙味あり</b></li><li>14 ビップムーラン: AI順位2位 / 人気5番人気 / ズレ+3 / 妙味スコア77 <b>確認</b></li><li>13 ランスオブキング: AI順位3位 / 人気4番人気 / ズレ+1 / 妙味スコア57 <b>確認</b></li><li>2 セイウンバジリスク: AI順位4位 / 人気13番人気 / ズレ+9 / 妙味スコア100 <b>妙味あり</b></li><li>15 キーンセンス: AI順位5位 / 人気11番人気 / ズレ+6 / 妙味スコア100 <b>妙味あり</b></li></ul></details>
-          <details><summary>ショート用コメント</summary><pre>京都6RこれAI的には6番ハードシングスが普通に気になる
-今回は見送り寄りで見るのが良さそう
-相手は上位印まで拾えば形にはなるやつ</pre></details>
-        </article>
-        
-    </section>
-  </main>
-</body>
+<!doctype html><html lang='ja'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>競馬AI 確認用</title><style>body{font-family:sans-serif;margin:16px;background:#07131f;color:#eaf6ff}.card{border:1px solid #1b5d75;border-radius:12px;padding:14px;margin:12px 0;background:#0d2030}.tag{color:#55e6ff;font-weight:700}</style>
+<h1>競馬AI 確認用 2026/05/10</h1>
+<section class='card'><h2>新潟8R 1勝ｸﾗｽ・牝</h2><p class='tag'>ガチ買い目</p>
+<ul>
+<li>◎ 4枠6番 ペンテリコン AI43.82 単勝5.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 7枠12番 ミヤジマナ AI43.71 単勝4.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 3枠5番 ハーモニーソング AI39.69 単勝6.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 2枠3番 プルミエールパス AI37.33 単勝8.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 8枠14番 ハッピーウィズユー AI31.38 単勝10.2倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 6-12 race_predict.csv内オッズ</p></section>
+<section class='card'><h2>新潟10R 五泉特Ｈ･2勝</h2><p class='tag'>ガチ買い目</p>
+<ul>
+<li>◎ 5枠7番 ケーヴァラ AI44.31 単勝3.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 4枠5番 エイカイソウル AI44.29 単勝3.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 3枠3番 フィールオーサム AI39.62 単勝7.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 7枠11番 マンオブザマッチ AI36.89 単勝9.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 6枠9番 メイショウクーガー AI34.55 単勝9.4倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 5-7 race_predict.csv内オッズ</p></section>
+<section class='card'><h2>京都8R 1勝ｸﾗｽ</h2><p class='tag'>ガチ買い目</p>
+<ul>
+<li>◎ 8枠12番 タマモブラウンタイ AI47.79 単勝3.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 1枠1番 ジーティーエスピ AI47.48 単勝2.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 8枠11番 レオナルドスター AI40.65 単勝6.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 2枠2番 ブルーレース AI35.98 単勝10.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 6枠8番 ブライトアゲイン AI30.08 単勝12.2倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 1-12 race_predict.csv内オッズ / 3連単 12-1-11 race_predict.csv内オッズ / 3連単 12-1-2 race_predict.csv内オッズ / 3連単 12-1-8 race_predict.csv内オッズ / 3連単 12-11-1 race_predict.csv内オッズ / 3連単 12-11-2 race_predict.csv内オッズ / 3連単 12-11-8 race_predict.csv内オッズ / 3連単 12-2-1 race_predict.csv内オッズ / 3連単 12-2-11 race_predict.csv内オッズ / 3連単 12-2-8 race_predict.csv内オッズ</p></section>
+<section class='card'><h2>京都12R 2勝ｸﾗｽ</h2><p class='tag'>ガチ買い目</p>
+<ul>
+<li>◎ 2枠2番 メイショウタムシバ AI43.13 単勝5.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 8枠14番 ヴィリアリート AI42.98 単勝3.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 5枠8番 ランスオブセヘル AI42.48 単勝5.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 7枠11番 ユウトザレン AI36.84 単勝6.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 6枠10番 レッドダンルース AI34.52 単勝7.1倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 2-14 race_predict.csv内オッズ</p></section>
+<section class='card'><h2>新潟1R 未勝利・牝</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 7枠13番 ヴァイヴァーイ AI45.42 単勝2.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 4枠6番 クッカユフラ AI40.84 単勝6.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 5枠8番 マスカルポーネ AI38.67 単勝6.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 2枠3番 ブリスフルイヤー AI32.79 単勝8.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 1枠1番 ロココ AI29.98 単勝9.9倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 6-13  / 馬連 3-13  / 馬連 3-6 </p></section>
+<section class='card'><h2>新潟2R 未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 3枠4番 セイウンヤオヨロズ AI43.01 単勝3.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 6枠10番 エコログロウ AI41.03 単勝4.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 3枠5番 ドリームガッサン AI38.49 単勝9.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 2枠3番 ベセル AI38.01 単勝7.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 8枠15番 ニシノスフィンクス AI34.88 単勝7.0倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 4-10  / 馬連 3-4  / 馬連 3-10 </p></section>
+<section class='card'><h2>新潟3R 未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 1枠1番 アイビーチーキー AI48.01 単勝2.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 2枠2番 マイネルゼーロス AI45.22 単勝6.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 3枠5番 ノリノドラゴン AI40.75 単勝6.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 7枠12番 トップデュオ AI30.06 単勝11.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 6枠10番 エトワールブルー AI28.39 単勝16.3倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 1-2  / 馬連 1-5  / 馬連 2-5 </p></section>
+<section class='card'><h2>新潟4R 障害未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 6枠8番 ドラギニャン AI44.51 単勝2.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 8枠12番 ラパンラピッド AI43.91 単勝4.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 1枠1番 ロイガヴェーグル AI37.54 単勝6.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 3枠3番 ポワンキュルミナン AI35.81 単勝7.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 5枠6番 ベールドインパクト AI29.88 単勝8.6倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 8-12  / 馬連 1-8  / 馬連 1-12 </p></section>
+<section class='card'><h2>新潟5R 未勝利・牝</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 6枠12番 ファストフォワード AI43.72 単勝4.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 6枠11番 ソニックブーム AI40.67 単勝4.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 4枠7番 ジュナベーラ AI38.12 単勝6.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 1枠2番 タガノプトゥリ AI32.08 単勝7.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 8枠16番 メイショウコハル AI30.55 単勝10.5倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 11-12  / 馬連 12-16  / 馬連 11-16 </p></section>
+<section class='card'><h2>新潟6R 未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 4枠7番 コンフィアンサ AI46.71 単勝3.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 5枠10番 オタルイーグル AI39.04 単勝6.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 8枠16番 ジョイアミーア AI36.93 単勝6.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 6枠11番 リアアーテシアン AI34.51 単勝6.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 8枠15番 リナシタ AI30.45 単勝16.4倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 7-10  / 馬連 7-15  / 馬連 10-15 </p></section>
+<section class='card'><h2>新潟7R 1勝ｸﾗｽ・若</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 8枠15番 ゴメンネジロー AI44.65 単勝3.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 8枠14番 ミライハーモニー AI43.41 単勝5.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 2枠3番 アツキヤマト AI40.33 単勝5.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 4枠7番 ヨドノゴールド AI38.72 単勝9.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 5枠9番 ワイドデコラシオン AI35.96 単勝8.1倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 14-15  / 馬連 3-15  / 馬連 3-14 </p></section>
+<section class='card'><h2>新潟9R 荒川峡特･1勝</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 6枠10番 パイオニアスクエア AI45.98 単勝4.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 3枠3番 レッドヴァリアート AI42.97 単勝6.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 7枠12番 キングズトゥルー AI41.46 単勝7.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 3枠4番 ガンバルマン AI35.31 単勝8.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 5枠7番 ディアボリカドンナ AI34.08 単勝8.2倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 3-10  / 馬連 10-12  / 馬連 3-12 </p></section>
+<section class='card'><h2>新潟11R 谷川岳Ｓ(L)</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 7枠11番 クランフォード AI46.73 単勝3.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 6枠9番 アルテヴェローチェ AI37.65 単勝6.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 4枠6番 グロリアラウス AI35.9 単勝8.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 4枠5番 グレイイングリーン AI34.43 単勝11.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 5枠7番 ランフォーヴァウ AI27.09 単勝12.8倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 9-11  / 馬連 6-9  / 馬連 6-11 </p></section>
+<section class='card'><h2>新潟12R 1勝ｸﾗｽ</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 7枠10番 ベルファスト AI45.5 単勝3.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 1枠1番 アスクヴォルテージ AI42.06 単勝4.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 8枠12番 ノボリリア AI40.29 単勝4.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 5枠7番 ジェニファー AI38.64 単勝7.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 6枠8番 ルパヴィヨン AI32.99 単勝10.4倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 1-10  / 馬連 7-10  / 馬連 1-7 </p></section>
+<section class='card'><h2>東京1R 未勝利・牝</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 2枠3番 ゴールドビリーヴ AI43.86 単勝2.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 8枠16番 ユーゲットミー AI43.66 単勝8.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 2枠4番 ビッグベンメロディ AI38.41 単勝9.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 1枠2番 バーヴァンシー AI33.05 単勝10.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 4枠7番 タートルインメイ AI32.93 単勝9.7倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 3-16  / 馬連 3-4  / 馬連 4-16 </p></section>
+<section class='card'><h2>東京2R 未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 8枠16番 ラッキーモア AI48.22 単勝1.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 4枠7番 フルールサシェ AI43.23 単勝3.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 1枠2番 サクラドール AI38.95 単勝6.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 6枠11番 アジュアカレンツ AI34.55 単勝13.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 1枠1番 ヴェントベローチェ AI23.53 単勝35.6倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 7-16  / 馬連 2-16  / 馬連 2-7 </p></section>
+<section class='card'><h2>東京3R 未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 3枠6番 アイアンパイク AI46.76 単勝2.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 5枠10番 ウインアプローチ AI44.36 単勝3.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 1枠2番 サンセリテ AI40.62 単勝7.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 2枠3番 セシルブリュネ AI36.35 単勝11.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 1枠1番 フレアリングベリー AI32.15 単勝11.9倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 2-6  / 馬連 2-10  / 馬連 6-10 </p></section>
+<section class='card'><h2>東京4R 未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 5枠7番 ゴンファロニエーレ AI47.67 単勝2.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 3枠4番 ランブルスコ AI45.93 単勝2.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 6枠10番 フキョウワオン AI38.05 単勝7.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 7枠12番 ベアダイヤモンド AI34.98 単勝17.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 5枠8番 プリティウーマン AI28.38 単勝18.6倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 4-7  / 馬連 7-10  / 馬連 4-10 </p></section>
+<section class='card'><h2>東京5R 1勝ｸﾗｽ*</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 3枠5番 ミスターキャンベラ AI46.81 単勝3.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 8枠16番 ビービーアジャイル AI45.01 単勝4.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 6枠11番 メイショウペイト AI35.71 単勝6.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 6枠12番 ケイツーリーブル AI34.29 単勝7.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 7枠14番 アスクドゥチャンプ AI33.06 単勝9.2倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 5-12  / 馬連 5-16  / 馬連 12-16 </p></section>
+<section class='card'><h2>東京6R 1勝ｸﾗｽ</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 8枠10番 アセンブリールーム AI48.65 単勝2.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 6枠6番 ディオデルマーレ AI46.32 単勝3.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 7枠8番 ゴールドシーン AI41.95 単勝4.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 5枠5番 ウインイザナミ AI37.01 単勝11.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 6枠7番 グレゴリオ AI35.82 単勝12.6倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 6-10  / 馬連 5-10  / 馬連 5-6 </p></section>
+<section class='card'><h2>東京7R 1勝ｸﾗｽ</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 7枠13番 キミハスコール AI45.52 単勝4.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 6枠12番 トニケンサンバ AI43.33 単勝4.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 5枠9番 シルフレイ AI40.72 単勝5.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 2枠4番 エコロカディス AI39.76 単勝5.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 1枠1番 ブリックンクリック AI29.15 単勝12.8倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 12-13  / 馬連 4-13  / 馬連 4-12 </p></section>
+<section class='card'><h2>東京9R 日吉特別･2勝</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 3枠3番 オオタチ AI49.59 単勝2.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 8枠8番 タイセイカイザー AI45.36 単勝3.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 7枠7番 ドゥラエテルノ AI44.51 単勝4.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 1枠1番 インペリアルライン AI38.32 単勝7.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 4枠4番 ロードブレイズ AI35.47 単勝9.6倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 3-7  / 馬連 3-8  / 馬連 7-8 </p></section>
+<section class='card'><h2>東京10R メトロポ(L)</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 7枠10番 シャイニングソード AI46.78 単勝2.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 2枠2番 バトルボーン AI45.05 単勝3.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 5枠5番 ゴールデンスナップ AI37.68 単勝8.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 8枠12番 ウエストナウ AI37.68 単勝7.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 3枠3番 ラスカンブレス AI33.37 単勝8.6倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 5-10  / 馬連 2-10  / 馬連 2-5 </p></section>
+<section class='card'><h2>東京11R ＮＨＫマG1</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 4枠7番 ダイヤモンドノット AI45.54 単勝3.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 8枠17番 ロデオドライブ AI40.52 単勝6.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 5枠10番 エコロアルバ AI40.21 単勝6.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 2枠4番 カヴァレリッツォ AI34.47 単勝7.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 6枠11番 アドマイヤクワッズ AI30.98 単勝11.9倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 7-17  / 馬連 7-10  / 馬連 10-17 </p></section>
+<section class='card'><h2>東京12R 立夏ＳＨ･3勝</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 2枠3番 セギレエルビエント AI47.3 単勝3.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 4枠6番 ロッシニアーナ AI43.57 単勝4.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 5枠8番 レディーフランシス AI40.09 単勝6.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 7枠12番 ルージュスタニング AI35.65 単勝8.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 7枠13番 ミライヘノカギ AI33.35 単勝8.2倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 3-6  / 馬連 3-8  / 馬連 6-8 </p></section>
+<section class='card'><h2>京都1R 未勝利・牝</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 6枠7番 ミルボナー AI50.35 単勝1.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 7枠8番 スマイルガーデン AI45.65 単勝7.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 3枠3番 メイショウメゴヒメ AI38.65 単勝7.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 8枠11番 グロリアス AI37.59 単勝11.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 7枠9番 メイショウマグナ AI27.85 単勝13.6倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 7-8  / 馬連 3-8  / 馬連 3-7 </p></section>
+<section class='card'><h2>京都2R 未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 3枠6番 ルーポ AI48.32 単勝3.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 1枠2番 サトノロザリー AI46.05 単勝4.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 7枠14番 ザキノフレンズ AI41.08 単勝5.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 3枠5番 メリフルアス AI39.43 単勝6.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 2枠4番 ダイイズキャスト AI32.47 単勝7.8倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 4-6  / 馬連 2-6  / 馬連 2-4 </p></section>
+<section class='card'><h2>京都4R 未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 8枠16番 ビッグヒーロー AI48.04 単勝1.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 5枠10番 ブランチアウト AI41.09 単勝8.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 2枠4番 エイシンビーコン AI37.73 単勝9.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 1枠1番 パーシャングレー AI37.62 単勝12.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 8枠15番 アイルトン AI30.36 単勝13.4倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 10-16  / 馬連 15-16  / 馬連 10-15 </p></section>
+<section class='card'><h2>京都5R 未勝利</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 6枠8番 フレアオブセンス AI48.26 単勝1.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 6枠9番 アトレッタ AI41.27 単勝4.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 3枠3番 マーチャンシップ AI35.76 単勝9.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 1枠1番 トライアンドエラー AI34.23 単勝14.2倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 7枠10番 ベルアズーロ AI28.39 単勝14.9倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 8-9  / 馬連 8-10  / 馬連 9-10 </p></section>
+<section class='card'><h2>京都6R 1勝ｸﾗｽ</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 2枠2番 ドルチェリターン AI47.98 単勝3.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 1枠1番 タマモランプ AI45.31 単勝3.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 3枠3番 ロットブラータ AI42.21 単勝3.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 6枠6番 ニホンピロゴルディ AI37.38 単勝6.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 5枠5番 レジェンドシップ AI35.13 単勝8.7倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 1-2  / 馬連 1-6  / 馬連 2-6 </p></section>
+<section class='card'><h2>京都7R 1勝ｸﾗｽ・牝*</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 5枠6番 シュネルアンジュ AI47.38 単勝1.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 1枠1番 ショコラプリン AI44.19 単勝4.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 8枠11番 ベルソテイラ AI40.45 単勝6.6倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 6枠7番 メイショウコマチ AI34.77 単勝11.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 7枠10番 ルージュビバーチェ AI32.63 単勝15.4倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 1-6  / 馬連 1-11  / 馬連 6-11 </p></section>
+<section class='card'><h2>京都9R 烏丸ＳＨ･3勝</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 8枠13番 ベトルス AI47.09 単勝2.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 5枠6番 レクスノヴァス AI43.29 単勝3.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 6枠9番 ミスタージーティー AI40.95 単勝8.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 8枠12番 オメガナビゲーター AI38.5 単勝9.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 2枠2番 ディーガレジェンド AI31.71 単勝15.8倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 6-13  / 馬連 9-13  / 馬連 6-9 </p></section>
+<section class='card'><h2>京都10R 橘Ｓ(L)</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 5枠5番 スペルーチェ AI47.3 単勝2.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 4枠4番 タガノアラリア AI44.18 単勝2.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 1枠1番 ケールハイム AI42.37 単勝5.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 6枠6番 フォーゲル AI37.32 単勝9.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 8枠10番 アスミル AI31.63 単勝15.5倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 4-5  / 馬連 4-6  / 馬連 5-6 </p></section>
+<section class='card'><h2>京都11R 平城京Ｓ</h2><p class='tag'>候補止まり</p>
+<ul>
+<li>◎ 5枠10番 グランドプラージュ AI45.23 単勝3.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 2枠4番 テスティモーネ AI44.31 単勝2.0倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 8枠16番 テーオーグランビル AI39.11 単勝7.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 3枠5番 ワイドブリザード AI38.64 単勝8.3倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 7枠13番 メルキオル AI30.37 単勝9.9倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 10-16  / 馬連 4-10  / 馬連 4-16 </p></section>
+<section class='card'><h2>東京8R 2勝ｸﾗｽ</h2><p class='tag'>穴候補</p>
+<ul>
+<li>◎ 6枠7番 レッドキングリー AI48.44 単勝1.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 1枠1番 ホウオウシェリー AI43.43 単勝10.9倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 7枠9番 プリティディーヴァ AI42.9 単勝8.7倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 5枠5番 ミクストベリーズ AI39.72 単勝11.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 8枠11番 メイケイバートン AI34.45 単勝14.8倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 7-9  / 馬連 1-7  / 馬連 1-9 </p></section>
+<section class='card'><h2>京都3R 未勝利</h2><p class='tag'>穴候補</p>
+<ul>
+<li>◎ 1枠1番 セスティーナ AI49.17 単勝1.5倍 <small>race_predict.csv内オッズ</small></li>
+<li>○ 8枠11番 ハイドパーク AI42.66 単勝4.4倍 <small>race_predict.csv内オッズ</small></li>
+<li>▲ 7枠9番 レディトゥフライト AI40.03 単勝13.8倍 <small>race_predict.csv内オッズ</small></li>
+<li>☆ 2枠2番 ニシノエビガタメ AI33.52 単勝15.1倍 <small>race_predict.csv内オッズ</small></li>
+<li>△ 3枠3番 トコトコクマチ AI29.99 単勝24.3倍 <small>race_predict.csv内オッズ</small></li>
+</ul>
+<p>買い目: 馬連 9-11  / 馬連 1-11  / 馬連 1-9 </p></section>
 </html>
